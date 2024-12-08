@@ -1,4 +1,5 @@
 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +11,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #53500d;
+            background-color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,7 +24,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1;
+            z-index: -1;
         }
         #menu {
             position: fixed;
@@ -72,6 +73,7 @@
         <option value="rgba(0, 0, 255, 0.5)">Albastru</option>
         <option value="rgba(255, 165, 0, 0.5)">Portocaliu</option>
         <option value="rgba(128, 0, 128, 0.5)">Mov</option>
+        <option value="rgba(255, 192, 203, 0.5)">Roz</option>
         <option value="rgba(0, 255, 255, 0.5)">Cyan</option>
     </select>
     <br><br>
@@ -90,11 +92,7 @@
 </div>
 
 <div id="hud" style="display:none">
-    <p>Scor Albine: <span id="preyScore">0</span></p>
-    <p>Scor Prădători: <span id="predatorScore">0</span></p>
-    <p>Număr Prădători: <span id="numPredators">3</span></p>
-    <div id="colorScores"></div>
-    <div id="goalRanking"></div>
+    <div id="topPerformers"></div>
 </div>
 
 <button id="restartButton" style="display:none" onclick="restartGame()">Restart Game</button>
@@ -105,228 +103,28 @@
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
-    let goals = [];
+    let whiteParticle;
     let blackParticles = [];
-    let ants = [];
     let particleColors = [
-        { name: 'Roșu', rgba: 'rgba(255, 0, 0, 0.5)' },
-        { name: 'Verde', rgba: 'rgba(0, 128, 0, 0.5)' },
-        { name: 'Albastru', rgba: 'rgba(0, 0, 255, 0.5)' },
-        { name: 'Portocaliu', rgba: 'rgba(255, 165, 0, 0.5)' },
-        { name: 'Mov', rgba: 'rgba(128, 0, 128, 0.5)' },
-        { name: 'Cyan', rgba: 'rgba(0, 255, 255, 0.5)' }
+        'rgba(255, 0, 0, 0.5)',
+        'rgba(0, 128, 0, 0.5)',
+        'rgba(0, 0, 255, 0.5)',
+        'rgba(255, 165, 0, 0.5)',
+        'rgba(128, 0, 128, 0.5)',
+        'rgba(255, 192, 203, 0.5)',
+        'rgba(0, 255, 255, 0.5)'
     ];
-    let preyScore = 0;
-    let predatorScore = 0;
-    let colorScores = {};
-    let goldenCircle = { x: canvas.width / 2, y: canvas.height / 2, radius: 100, points: 10000 };
-
-    class Goal {
-        constructor(x, y, color) {
-            this.x = x;
-            this.y = y;
-            this.color = color;
-            this.size = 20;
-            this.hits = 0;
-            this.score = 0;
-        }
-        draw() {
-            const hexRadius = this.size;
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle = Math.PI / 3 * i;
-                const x = this.x + hexRadius * Math.cos(angle);
-                const y = this.y + hexRadius * Math.sin(angle);
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.closePath();
-            ctx.fillStyle = this.color.rgba;
-            ctx.fill();
-        }
-        decreaseSize() {
-            this.hits++;
-            if (this.hits >= 3) {
-                this.size = Math.max(10, this.size / 2);
-                this.hits = 0;
-            }
-        }
-        increaseSize() {
-            this.size += 0.05;
-            this.score += 0.05;
-        }
-        relocate() {
-            let newX, newY;
-            do {
-                newX = Math.random() * (canvas.width - 100) + 50;
-                newY = Math.random() * (canvas.height - 100) + 50;
-            } while (Math.sqrt((newX - goldenCircle.x) ** 2 + (newY - goldenCircle.y) ** 2) < goldenCircle.radius + 900);
-
-            this.x = newX;
-            this.y = newY;
-        }
-    }
-
-    function relocateGoalsPeriodically() {
-        setInterval(() => {
-            goals.forEach(goal => {
-                goal.relocate();
-            });
-        }, 10000);
-    }
-
-    class Ant {
-        constructor(x, y, speed) {
-            this.x = x;
-            this.y = y;
-            this.speed = speed;
-            this.target = null;
-        }
-
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, 5, 0, Math.PI * 2, false);
-            ctx.fillStyle = 'brown';
-            ctx.fill();
-        }
-
-        update() {
-            if (!this.target || this.target.size <= 10) {
-                this.target = goals[Math.floor(Math.random() * goals.length)];
-            }
-
-            const dx = this.target.x - this.x;
-            const dy = this.target.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < this.target.size) {
-                this.target.decreaseSize();
-                this.target = null;
-            } else {
-                this.x += (dx / distance) * this.speed;
-                this.y += (dy / distance) * this.speed;
-            }
-
-            blackParticles.forEach(blackParticle => {
-                const dx = blackParticle.x - this.x;
-                const dy = blackParticle.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < blackParticle.size) {
-                    blackParticle.paralyze();
-                }
-            });
-
-            this.draw();
-        }
-    }
-
-    class GoldenCircle {
-        constructor(x, y, radius, points) {
-            this.x = x;
-            this.y = y;
-            this.radius = radius;
-            this.points = points;
-        }
-
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            ctx.fillStyle = 'gold';
-            ctx.fill();
-        }
-
-        shrink() {
-            if (this.points > 0) {
-                this.points -= 0.05;
-            }
-        }
-    }
-
-    class BlackParticle {
-        constructor(x, y, size) {
-            this.x = x;
-            this.y = y;
-            this.size = size;
-            this.speed = 1.5;
-            this.paralyzed = false;
-            this.paralyzeTimer = 0;
-        }
-
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-            ctx.fillStyle = this.paralyzed ? 'gray' : 'black';
-            ctx.fill();
-        }
-
-        paralyze() {
-            this.paralyzed = true;
-            this.paralyzeTimer = 300; // 5 seconds at 60 FPS
-        }
-
-        update() {
-            if (this.paralyzed) {
-                this.paralyzeTimer--;
-                if (this.paralyzeTimer <= 0) {
-                    this.paralyzed = false;
-                }
-                this.draw();
-                return;
-            }
-
-            let closestParticle = null;
-            let minDistance = Infinity;
-
-            particlesArray.forEach(particle => {
-                if (!particle.hasHoney) {
-                    const dx = particle.x - this.x;
-                    const dy = particle.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestParticle = particle;
-                    }
-                }
-            });
-
-            if (closestParticle) {
-                const dx = closestParticle.x - this.x;
-                const dy = closestParticle.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < this.size) {
-                    const index = particlesArray.indexOf(closestParticle);
-                    if (index > -1) {
-                        particlesArray.splice(index, 1);
-                        predatorScore++;
-                        document.getElementById('predatorScore').textContent = predatorScore;
-                    }
-                } else {
-                    this.x += (dx / distance) * this.speed;
-                    this.y += (dy / distance) * this.speed;
-                }
-            }
-
-            this.draw();
-        }
-    }
+    let usedColors = new Set();
+    let gameInterval;
 
     window.addEventListener('resize', function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        goldenCircle = new GoldenCircle(canvas.width / 2, canvas.height / 2, 100, 10000);
         init(particlesArray.length);
     });
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    const goldenCircleInstance = new GoldenCircle(canvas.width / 2, canvas.height / 2, 100, 10000);
 
     class Particle {
         constructor(x, y, directionX, directionY, size, color) {
@@ -336,19 +134,14 @@
             this.directionY = directionY;
             this.size = size;
             this.color = color;
-            this.originalColor = color.rgba;
-            this.hasHoney = false;
         }
         draw() {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-            ctx.fillStyle = this.hasHoney ? 'gold' : this.originalColor;
+            ctx.fillStyle = this.color;
             ctx.fill();
         }
         update() {
-            this.x += this.directionX;
-            this.y += this.directionY;
-
             if (this.x + this.size > canvas.width || this.x - this.size < 0) {
                 this.directionX = -this.directionX;
             }
@@ -356,35 +149,57 @@
                 this.directionY = -this.directionY;
             }
 
-            const dx = goldenCircleInstance.x - this.x;
-            const dy = goldenCircleInstance.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            this.x += this.directionX;
+            this.y += this.directionY;
 
-            if (!this.hasHoney && distance < goldenCircleInstance.radius) {
-                this.hasHoney = true;
-                goldenCircleInstance.shrink();
+            this.draw();
+        }
+    }
+
+    class BlackParticle {
+        constructor(x, y, size, targetColor) {
+            this.x = x;
+            this.y = y;
+            this.size = size;
+            this.targetColor = targetColor;
+            this.speed = 5;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+        update() {
+            let closestParticle = null;
+            let minDistance = Infinity;
+
+            for (const particle of particlesArray) {
+                if (particle.color === this.targetColor) {
+                    const dx = this.x - particle.x;
+                    const dy = this.y - particle.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestParticle = particle;
+                    }
+                }
             }
 
-            if (this.hasHoney) {
-                const goal = goals.find(goal => goal.color.rgba === this.color.rgba);
-                const goalDx = goal.x - this.x;
-                const goalDy = goal.y - this.y;
-                const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
+            if (closestParticle) {
+                const dx = closestParticle.x - this.x;
+                const dy = closestParticle.y - this.y;
+                const angle = Math.atan2(dy, dx);
 
-                if (goalDistance < this.size) {
-                    goal.increaseSize();
-                    preyScore++;
-                    document.getElementById('preyScore').textContent = preyScore;
-                    this.hasHoney = false;
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
 
-                    // Deposit honey around the goal
-                    ctx.beginPath();
-                    ctx.arc(goal.x + Math.random() * 10 - 5, goal.y + Math.random() * 10 - 5, 3, 0, Math.PI * 2, false);
-                    ctx.fillStyle = 'gold';
-                    ctx.fill();
-                } else {
-                    this.directionX = goalDx / goalDistance;
-                    this.directionY = goalDy / goalDistance;
+                if (minDistance < this.size + closestParticle.size) {
+                    const index = particlesArray.indexOf(closestParticle);
+                    if (index > -1) {
+                        particlesArray.splice(index, 1);
+                    }
                 }
             }
 
@@ -392,82 +207,91 @@
         }
     }
 
-    function createGoals() {
-        goals = [];
-        const margin = 50;
-        const positions = [
-            { x: margin, y: margin },
-            { x: canvas.width - margin, y: margin },
-            { x: margin, y: canvas.height - margin },
-            { x: canvas.width - margin, y: canvas.height - margin },
-            { x: canvas.width / 2, y: margin },
-            { x: canvas.width / 2, y: canvas.height - margin }
-        ];
+    class WhiteParticle {
+        constructor(x, y, size) {
+            this.x = x;
+            this.y = y;
+            this.size = size;
+            this.angle = 0;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+        update() {
+            this.angle += 0.1;
+            const xOffset = Math.cos(this.angle) * this.size * 1.5;
+            const yOffset = Math.sin(this.angle) * this.size * 1.5;
 
-        particleColors.forEach((color, index) => {
-            const position = positions[index % positions.length];
-            goals.push(new Goal(position.x, position.y, color));
-        });
+            const size = Math.random() * 3 + 1;
+            const directionX = (Math.random() - 0.5);
+            const directionY = (Math.random() - 0.5);
+            const color = particleColors[Math.floor(Math.random() * particleColors.length)];
+
+            particlesArray.push(new Particle(this.x - xOffset, this.y - yOffset, directionX, directionY, size, color));
+
+            this.draw();
+        }
     }
 
-    function drawGoals() {
-        goals.forEach(goal => goal.draw());
+    function adjustDifficulty(value) {
+        switch (value) {
+            case 'easy':
+                return 0.5;
+            case 'medium':
+                return 1;
+            case 'hard':
+                return 2;
+            default:
+                return 1;
+        }
     }
 
-    function updateGoalRanking() {
-        const sortedGoals = goals.slice().sort((a, b) => b.size - a.size);
-        const rankingDiv = document.getElementById('goalRanking');
-        rankingDiv.innerHTML = '<h3>Clasament Pătrate:</h3>' + sortedGoals.map(goal => `${goal.color.name}: ${goal.size.toFixed(2)}`).join('<br>');
+    function spawnNewBlackParticle() {
+        const availableColors = particleColors.filter(color => !usedColors.has(color));
+        if (availableColors.length > 0) {
+            const newTargetColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+            usedColors.add(newTargetColor);
+            const newBlackParticle = new BlackParticle(canvas.width / 2, canvas.height / 2, 10, newTargetColor);
+            blackParticles.push(newBlackParticle);
+        }
     }
 
     function init(numParticles) {
         particlesArray = [];
         blackParticles = [];
-        ants = [];
-        colorScores = {};
-        createGoals();
-        relocateGoalsPeriodically();
+        usedColors = new Set();
+        const difficulty = adjustDifficulty(document.getElementById('difficulty').value);
+        targetColor = document.getElementById('color').value;
+        usedColors.add(targetColor);
+        blackParticles.push(new BlackParticle(canvas.width / 2, canvas.height / 2, 10, targetColor));
+        whiteParticle = new WhiteParticle(canvas.width / 2, canvas.height / 2, 10);
 
         for (let i = 0; i < numParticles; i++) {
             const size = Math.random() * 3 + 1;
             const x = Math.random() * (canvas.width - size * 2);
             const y = Math.random() * (canvas.height - size * 2);
-            const directionX = (Math.random() - 0.5) * 2; // Adjusted random initial directions
-            const directionY = (Math.random() - 0.5) * 2;
+            const directionX = (Math.random() - 0.5) * difficulty;
+            const directionY = (Math.random() - 0.5) * difficulty;
             const color = particleColors[Math.floor(Math.random() * particleColors.length)];
             particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
         }
-
-        // Create three black particles (predators)
-        for (let i = 0; i < 3; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            blackParticles.push(new BlackParticle(x, y, 15));
-        }
-
-        // Create one ant
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        ants.push(new Ant(x, y, 1));
-
+        setInterval(spawnNewBlackParticle, 10000);
         document.getElementById('menu').style.display = 'none';
-        document.getElementById('hud').style.display = 'block';
     }
 
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        goldenCircleInstance.draw();
-        drawGoals();
-        particlesArray.forEach(particle => particle.update());
-        blackParticles.forEach(blackParticle => blackParticle.update());
-        ants.forEach(ant => ant.update());
-        updateGoalRanking();
-        requestAnimationFrame(animate);
-
-        if (particlesArray.length === 0) {
-            alert('All particles have been eaten! Game over.');
-            restartGame();
+        for (let i = 0; i < blackParticles.length; i++) {
+            blackParticles[i].update();
         }
+        whiteParticle.update();
+        for (let i = 0; i < particlesArray.length; i++) {
+            particlesArray[i].update();
+        }
+        gameInterval = requestAnimationFrame(animate);
     }
 
     function startGame() {
