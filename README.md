@@ -200,7 +200,7 @@
         }
 
         adjustSizeForDevice() {
-            if (window.innerWidth < 768) { // Mobile devices
+            if (window.innerWidth < 1268) { // Mobile devices
                 this.radius = this.originalRadius * 0.5;
             } else {
                 this.radius = this.originalRadius;
