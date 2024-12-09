@@ -89,7 +89,7 @@
     </select>
     <br><br>
     <label for="numParticles">Number of initial particles:</label>
-    <input type="number" id="numParticles" min="10" max="200" value="50">
+    <input type="number" id="numParticles" min="10" max="5000" value="5000">
     <br><br>
     <label for="difficulty">Difficulty:</label>
     <select id="difficulty" onchange="showDifficultyDescription()">
@@ -189,7 +189,6 @@
             this.x = x;
             this.y = y;
             this.radius = radius;
-            this.originalRadius = radius;
         }
 
         draw() {
@@ -197,14 +196,6 @@
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
             ctx.fillStyle = 'gold';
             ctx.fill();
-        }
-
-        adjustSizeForDevice() {
-            if (window.innerWidth < 768) { // Mobile devices
-                this.radius = this.originalRadius * 0.5;
-            } else {
-                this.radius = this.originalRadius;
-            }
         }
     }
 
@@ -327,7 +318,7 @@
                     if (preyScore % 100 === 0) {
                         hive.relocate();
                     }
-                    if (freezeEnergy >= 10000) {
+                    if (freezeEnergy >= 1000) {
                         document.getElementById('freezeButton').style.display = 'block';
                     }
                     checkGameOver();
@@ -376,7 +367,7 @@
         particlesArray = [];
         blackParticles = [];
 
-        const numParticles = parseInt(document.getElementById('numParticles').value) || 50;
+        const numParticles = parseInt(document.getElementById('numParticles').value) || 5000;
         for (let i = 0; i < numParticles; i++) {
             const size = Math.random() * 3 + 1;
             const x = Math.random() * (canvas.width - size * 2);
@@ -397,7 +388,6 @@
         }
 
         goldenCircle = new GoldenCircle(canvas.width / 2, canvas.height / 2, 100);
-        goldenCircle.adjustSizeForDevice();
 
         hive = new Hive(canvas.width / 2, canvas.height / 2 + 200, 40);
     }
@@ -425,7 +415,6 @@
     window.addEventListener('resize', function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        goldenCircle.adjustSizeForDevice();
         blackParticles.forEach(particle => particle.adjustSizeForDevice());
     });
 
