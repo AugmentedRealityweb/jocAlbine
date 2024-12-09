@@ -255,76 +255,44 @@
             if (this.frozen || gameOver) return;
 
             if (this.controlled) {
-    if (isMobile) {
-        // Mișcare cu joystick
-        const dx = joystickPosition.x;
-        const dy = joystickPosition.y;
-        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-            this.vx = dx * this.speed * 1.5;
-            this.vy = dy * this.speed * 1.5;
-        } else {
-            this.vx = 0;
-            this.vy = 0;
-        }
-    } else {
-        // Urmărește mouse-ul pe PC
-        const dx = mouse.x - this.x;
-        const dy = mouse.y - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance > 1) {
-            this.vx = (dx / distance) * this.speed;
-            this.vy = (dy / distance) * this.speed;
-        } else {
-            this.vx = 0;
-            this.vy = 0;
-        }
-    }
-
-    // Actualizăm poziția
-    this.x += this.vx;
-    this.y += this.vy;
-
-    // Verificăm coliziunile cu albinele cu miere
-    particlesArray.forEach(particle => {
-        if (particle.hasHoney) {
-            const distX = particle.x - this.x;
-            const distY = particle.y - this.y;
-            const distance = Math.sqrt(distX * distX + distY * distY);
-            // Luăm în considerare și mărimea particulei de miere
-            if (distance < this.size + particle.size) {
-                const index = particlesArray.indexOf(particle);
-                if (index > -1) {
-                    particlesArray.splice(index, 1);
-                    predatorScore++;
-                    document.getElementById('predatorScore').textContent = predatorScore;
-                    checkGameOver();
+                if (isMobile) {
+                    // Reduce sensibilitatea la bondar
+                    // Inainte era dx * speed * 3, acum dx * speed * 1.5
+                    const dx = joystickPosition.x;
+                    const dy = joystickPosition.y;
+                    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+                        this.x += dx * this.speed * 1.5;
+                        this.y += dy * this.speed * 1.5;
+                    }
+                } else {
+                    // PC - urmareste mouse-ul
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > 1) {
+                        this.x += (dx / distance) * this.speed;
+                        this.y += (dy / distance) * this.speed;
+                    }
                 }
-            }
-        }
-    });
 
-    // Bounce la margini
-    if (this.x + this.size > canvas.width) {
-        this.x = canvas.width - this.size;
-        this.vx = -this.vx;
-    } else if (this.x - this.size < 0) {
-        this.x = this.size;
-        this.vx = -this.vx;
-    }
-
-    if (this.y + this.size > canvas.height) {
-        this.y = canvas.height - this.size;
-        this.vy = -this.vy;
-    } else if (this.y - this.size < 0) {
-        this.y = this.size;
-        this.vy = -this.vy;
-    }
-
-    this.draw();
-} else {
-    // ... cod pentru bondari necontrolați ...
-}
-
+                // Mancat particule cu miere
+                particlesArray.forEach(particle => {
+                    if (particle.hasHoney) {
+                        const distX = particle.x - this.x;
+                        const distY = particle.y - this.y;
+                        const distance = Math.sqrt(distX * distX + distY * distY);
+                        if (distance < this.size) {
+                            const index = particlesArray.indexOf(particle);
+                            if (index > -1) {
+                                particlesArray.splice(index, 1);
+                                predatorScore++;
+                                document.getElementById('predatorScore').textContent = predatorScore;
+                                checkGameOver();
+                            }
+                        }
+                    }
+                });
+            } else {
                 // Miscare normala prădători necontrolați
                 let closestParticle = null;
                 let minDistance = Infinity;
