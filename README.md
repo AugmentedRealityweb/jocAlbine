@@ -126,6 +126,13 @@
         mouse.y = event.clientY;
     });
 
+    window.addEventListener('touchmove', function (event) {
+        if (event.touches && event.touches.length > 0) {
+            mouse.x = event.touches[0].clientX;
+            mouse.y = event.touches[0].clientY;
+        }
+    });
+
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
@@ -182,6 +189,7 @@
             this.x = x;
             this.y = y;
             this.radius = radius;
+            this.originalRadius = radius;
         }
 
         draw() {
@@ -190,6 +198,14 @@
             ctx.fillStyle = 'gold';
             ctx.fill();
         }
+
+        adjustSizeForDevice() {
+            if (window.innerWidth < 768) { // Mobile devices
+                this.radius = this.originalRadius * 0.5;
+            } else {
+                this.radius = this.originalRadius;
+            }
+        }
     }
 
     class BlackParticle {
@@ -197,6 +213,7 @@
             this.x = x;
             this.y = y;
             this.size = size;
+            this.originalSize = size;
             this.speed = 1.5;
             this.frozen = false;
         }
@@ -206,6 +223,14 @@
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
             ctx.fillStyle = this.frozen ? 'gray' : 'black';
             ctx.fill();
+        }
+
+        adjustSizeForDevice() {
+            if (window.innerWidth < 768) { // Mobile devices
+                this.size = this.originalSize * 0.5;
+            } else {
+                this.size = this.originalSize;
+            }
         }
 
         update() {
@@ -302,7 +327,7 @@
                     if (preyScore % 100 === 0) {
                         hive.relocate();
                     }
-                    if (freezeEnergy >= 10000) {
+                    if (freezeEnergy >= 1000) {
                         document.getElementById('freezeButton').style.display = 'block';
                     }
                     checkGameOver();
@@ -366,10 +391,14 @@
             const size = 10;
             const x = Math.random() * (canvas.width - size * 2) + size;
             const y = Math.random() * (canvas.height - size * 2) + size;
-            blackParticles.push(new BlackParticle(x, y, size));
+            const blackParticle = new BlackParticle(x, y, size);
+            blackParticle.adjustSizeForDevice();
+            blackParticles.push(blackParticle);
         }
 
         goldenCircle = new GoldenCircle(canvas.width / 2, canvas.height / 2, 100);
+        goldenCircle.adjustSizeForDevice();
+
         hive = new Hive(canvas.width / 2, canvas.height / 2 + 200, 40);
     }
 
@@ -393,17 +422,12 @@
         animate();
     }
 
-    window.addEventListener('mousemove', function (event) {
-    mouse.x = event.clientX;
-    mouse.y = event.clientY;
-});
-
-window.addEventListener('touchmove', function (event) {
-    if (event.touches && event.touches.length > 0) {
-        mouse.x = event.touches[0].clientX;
-        mouse.y = event.touches[0].clientY;
-    }
-});
+    window.addEventListener('resize', function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        goldenCircle.adjustSizeForDevice();
+        blackParticles.forEach(particle => particle.adjustSizeForDevice());
+    });
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
