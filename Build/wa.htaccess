@@ -1,0 +1,8 @@
+<IfModule mod_mime.c>
+    AddType application/wasm .wasm
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(gz|wasm)$">
+        Header set Content-Encoding gzip
+    </FilesMatch>
+</IfModule>
