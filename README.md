@@ -75,8 +75,7 @@
         #joystickContainer {
             position: fixed;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 20px;
             width: 100px;
             height: 100px;
             background: rgba(0, 0, 0, 0.2);
@@ -243,9 +242,6 @@
             this.speed = 1.5;
             this.frozen = false;
             this.controlled = false;
-            // Vectori de viteză
-            this.vx = 0;
-            this.vy = 0;
         }
 
         draw() {
@@ -258,36 +254,78 @@
         update() {
             if (this.frozen || gameOver) return;
 
-            let moveX = 0;
-            let moveY = 0;
-
             if (this.controlled) {
-                if (isMobile) {
-                    // Bondar controlat cu joystick, viteza redusa
-                    const dx = joystickPosition.x;
-                    const dy = joystickPosition.y;
-                    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                        this.vx = dx * this.speed * 2;
-                        this.vy = dy * this.speed * 2;
-                    } else {
-                        this.vx = 0;
-                        this.vy = 0;
-                    }
-                } else {
-                    // PC - urmareste mouse-ul
-                    const dx = mouse.x - this.x;
-                    const dy = mouse.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance > 1) {
-                        this.vx = (dx / distance) * this.speed;
-                        this.vy = (dy / distance) * this.speed;
-                    } else {
-                        this.vx = 0;
-                        this.vy = 0;
-                    }
+    if (isMobile) {
+        // Mișcare cu joystick
+        const dx = joystickPosition.x;
+        const dy = joystickPosition.y;
+        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+            this.vx = dx * this.speed * 1.5;
+            this.vy = dy * this.speed * 1.5;
+        } else {
+            this.vx = 0;
+            this.vy = 0;
+        }
+    } else {
+        // Urmărește mouse-ul pe PC
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 1) {
+            this.vx = (dx / distance) * this.speed;
+            this.vy = (dy / distance) * this.speed;
+        } else {
+            this.vx = 0;
+            this.vy = 0;
+        }
+    }
+
+    // Actualizăm poziția
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Verificăm coliziunile cu albinele cu miere
+    particlesArray.forEach(particle => {
+        if (particle.hasHoney) {
+            const distX = particle.x - this.x;
+            const distY = particle.y - this.y;
+            const distance = Math.sqrt(distX * distX + distY * distY);
+            // Luăm în considerare și mărimea particulei de miere
+            if (distance < this.size + particle.size) {
+                const index = particlesArray.indexOf(particle);
+                if (index > -1) {
+                    particlesArray.splice(index, 1);
+                    predatorScore++;
+                    document.getElementById('predatorScore').textContent = predatorScore;
+                    checkGameOver();
                 }
-            } else {
-                // Urmareste cea mai apropiata particula cu miere
+            }
+        }
+    });
+
+    // Bounce la margini
+    if (this.x + this.size > canvas.width) {
+        this.x = canvas.width - this.size;
+        this.vx = -this.vx;
+    } else if (this.x - this.size < 0) {
+        this.x = this.size;
+        this.vx = -this.vx;
+    }
+
+    if (this.y + this.size > canvas.height) {
+        this.y = canvas.height - this.size;
+        this.vy = -this.vy;
+    } else if (this.y - this.size < 0) {
+        this.y = this.size;
+        this.vy = -this.vy;
+    }
+
+    this.draw();
+} else {
+    // ... cod pentru bondari necontrolați ...
+}
+
+                // Miscare normala prădători necontrolați
                 let closestParticle = null;
                 let minDistance = Infinity;
 
@@ -316,37 +354,15 @@
                             document.getElementById('predatorScore').textContent = predatorScore;
                             checkGameOver();
                         }
-                        this.vx = 0;
-                        this.vy = 0;
                     } else {
-                        this.vx = (dx / distance) * this.speed;
-                        this.vy = (dy / distance) * this.speed;
+                        this.x += (dx / distance) * this.speed;
+                        this.y += (dy / distance) * this.speed;
                     }
-                } else {
-                    this.vx = 0;
-                    this.vy = 0;
                 }
             }
 
-            this.x += this.vx;
-            this.y += this.vy;
-
-            // Bounce la margini
-            if (this.x + this.size > canvas.width) {
-                this.x = canvas.width - this.size;
-                this.vx = -this.vx;
-            } else if (this.x - this.size < 0) {
-                this.x = this.size;
-                this.vx = -this.vx;
-            }
-
-            if (this.y + this.size > canvas.height) {
-                this.y = canvas.height - this.size;
-                this.vy = -this.vy;
-            } else if (this.y - this.size < 0) {
-                this.y = this.size;
-                this.vy = -this.vy;
-            }
+            // Nu iesim din ecran
+            clampToCanvas(this);
 
             this.draw();
         }
@@ -384,7 +400,8 @@
                 // Dacă e albină (bees) și are miere
                 if (role === "bees") {
                     if (isMobile) {
-                        // Grupare cu un lider
+                        // Comportament de grup:
+                        // Gasim liderul - prima albina cu miere este liderul
                         const honeyBees = particlesArray.filter(p => p.hasHoney);
                         let leader = null;
                         if (honeyBees.length > 0) {
@@ -399,17 +416,21 @@
                                 this.y += dy * 2;
                             }
                         } else {
-                            // Celelalte albine cu miere urmeaza liderul
+                            // Celelalte urmeaza liderul
                             if (leader) {
+                                // Apropiere de lider
                                 let dx = leader.x - this.x;
                                 let dy = leader.y - this.y;
                                 let dist = Math.sqrt(dx*dx + dy*dy);
 
+                                // Mentinem o distanta "comfort" de 50 pixeli de lider
                                 const desiredDistance = 50;
                                 if (dist > desiredDistance) {
+                                    // Se apropie de lider
                                     this.x += (dx/dist) * 1.5;
                                     this.y += (dy/dist) * 1.5;
                                 } else if (dist < desiredDistance - 20) {
+                                    // Daca e prea aproape, se retrage usor
                                     this.x -= (dx/dist) * 0.5;
                                     this.y -= (dy/dist) * 0.5;
                                 }
@@ -421,6 +442,7 @@
                                         let oy = other.y - this.y;
                                         let odist = Math.sqrt(ox*ox + oy*oy);
                                         if (odist < 20) {
+                                            // Respinge usor
                                             this.x -= (ox/odist)*0.5;
                                             this.y -= (oy/odist)*0.5;
                                         }
@@ -429,7 +451,7 @@
                             }
                         }
                     } else {
-                        // PC - Control cu mouse-ul direct
+                        // PC - Control direct cu mouse-ul (fara grupare)
                         const dx = mouse.x - this.x;
                         const dy = mouse.y - this.y;
                         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -439,7 +461,7 @@
                         }
                     }
                 } else {
-                    // Bondar cu miere -> spre stup
+                    // Dacă e bondar cu miere -> spre stup
                     const dx = hive.x - this.x;
                     const dy = hive.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -449,7 +471,7 @@
                     }
                 }
 
-                // Depune mierea în stup
+                // Depune mierea la stup
                 if (Math.sqrt((this.x - hive.x) ** 2 + (this.y - hive.y) ** 2) < hive.size) {
                     this.hasHoney = false;
                     preyScore++;
@@ -469,7 +491,9 @@
             this.x += this.directionX;
             this.y += this.directionY;
 
-            // Bounce la margini pentru albine
+            // Nu lasam particulele sa iasa din ecran
+            clampToCanvas(this);
+
             if (this.x + this.size > canvas.width || this.x - this.size < 0) {
                 this.directionX = -this.directionX;
             }
@@ -612,6 +636,14 @@
         joystick.style.transform = "translate(-50%, -50%)";
         joystickPosition.x = 0;
         joystickPosition.y = 0;
+    }
+
+    // Functie pentru a limita pozitia la dimensiunile canvasului
+    function clampToCanvas(obj) {
+        if (obj.x < obj.size) obj.x = obj.size;
+        if (obj.y < obj.size) obj.y = obj.size;
+        if (obj.x > canvas.width - obj.size) obj.x = canvas.width - obj.size;
+        if (obj.y > canvas.height - obj.size) obj.y = canvas.height - obj.size;
     }
 
 </script>
