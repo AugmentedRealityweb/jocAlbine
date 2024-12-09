@@ -1,8 +1,7 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Particle Simulation</title>
     <style>
         body, html {
@@ -71,6 +70,31 @@
             z-index: 2;
             display: none;
         }
+
+        /* Joystick styles */
+        #joystickContainer {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            touch-action: none;
+            z-index: 2;
+        }
+
+        #joystick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s;
+        }
     </style>
 </head>
 <body>
@@ -83,14 +107,14 @@
         <option value="bees">Albine</option>
         <option value="wasps">Bondari</option>
     </select>
-    <br><br>
+    <br /><br />
     <label for="numParticles">Număr de albine:</label>
     <select id="numParticles">
         <option value="500">500</option>
         <option value="2000">2000</option>
         <option value="5000">5000</option>
     </select>
-    <br><br>
+    <br /><br />
     <button onclick="startGame()">Start Game</button>
 </div>
 
@@ -104,6 +128,11 @@
 
 <button id="restartButton" style="display:none" onclick="restartGame()">Restart Game</button>
 <button id="freezeButton" onclick="freezeBlackParticles()">Freeze Predators</button>
+
+<!-- Joystick elements -->
+<div id="joystickContainer">
+    <div id="joystick"></div>
+</div>
 
 <canvas id="particleCanvas"></canvas>
 
@@ -214,21 +243,24 @@
         update() {
             if (this.frozen || gameOver) return;
 
+            // Dacă acesta este controlat (rol: wasps)
             if (this.controlled) {
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance > 1) {
-                    this.x += (dx / distance) * this.speed;
-                    this.y += (dy / distance) * this.speed;
+                // Folosim joystickPosition pentru a deplasa bondarul controlat
+                const dx = joystickPosition.x;
+                const dy = joystickPosition.y;
+
+                // Dacă joystickul nu este mișcat, nu se mișcă nici bondarul
+                if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+                    this.x += dx * this.speed * 3; // Ajustează viteza după necesitate
+                    this.y += dy * this.speed * 3;
                 }
 
-                // Check collision with honey particles
+                // Verificare coliziune cu particule cu miere
                 particlesArray.forEach(particle => {
                     if (particle.hasHoney) {
-                        const dx = particle.x - this.x;
-                        const dy = particle.y - this.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const distX = particle.x - this.x;
+                        const distY = particle.y - this.y;
+                        const distance = Math.sqrt(distX * distX + distY * distY);
                         if (distance < this.size) {
                             const index = particlesArray.indexOf(particle);
                             if (index > -1) {
@@ -241,6 +273,7 @@
                     }
                 });
             } else {
+                // Mișcare normală a prădătorilor necontrolați
                 let closestParticle = null;
                 let minDistance = Infinity;
 
@@ -310,16 +343,17 @@
                     this.hasHoney = true;
                 }
             } else {
+                // Dacă e albină (bees), control prin joystick
                 if (role === "bees") {
-                    const dx = mouse.x - this.x;
-                    const dy = mouse.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance > 1) {
-                        this.x += (dx / distance) * 2;
-                        this.y += (dy / distance) * 2;
+                    const dx = joystickPosition.x;
+                    const dy = joystickPosition.y;
+                    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+                        // mișcă particula în direcția joystickului
+                        this.x += dx * 2;
+                        this.y += dy * 2;
                     }
                 } else {
+                    // Dacă nu e albină, ci bondar, se mișcă spre stup
                     const dx = hive.x - this.x;
                     const dy = hive.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -330,6 +364,7 @@
                     }
                 }
 
+                // Depune mierea în stup
                 if (Math.sqrt((this.x - hive.x) ** 2 + (this.y - hive.y) ** 2) < hive.size) {
                     this.hasHoney = false;
                     preyScore++;
@@ -412,7 +447,6 @@
         }
 
         goldenCircle = new GoldenCircle(canvas.width / 2, canvas.height / 2, 100);
-
         hive = new Hive(canvas.width / 2, canvas.height / 2 + 200, 40);
     }
 
@@ -437,42 +471,6 @@
         animate();
     }
 
-function handleTouchStart(event) {
-    isDragging = true;
-    handleTouchMove(event);
-}
-
-function handleTouchMove(event) {
-    if (!isDragging) return;
-
-    const rect = joystickContainer.getBoundingClientRect();
-    const touch = event.touches[0];
-    const dx = touch.clientX - rect.left - rect.width / 2;
-    const dy = touch.clientY - rect.top - rect.height / 2;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const maxDistance = rect.width / 2;
-
-    if (distance < maxDistance) {
-        joystick.style.transform = `translate(${dx}px, ${dy}px)`;
-        joystickPosition.x = dx / maxDistance;
-        joystickPosition.y = dy / maxDistance;
-    } else {
-        const angle = Math.atan2(dy, dx);
-        const limitedX = Math.cos(angle) * maxDistance;
-        const limitedY = Math.sin(angle) * maxDistance;
-        joystick.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
-        joystickPosition.x = limitedX / maxDistance;
-        joystickPosition.y = limitedY / maxDistance;
-    }
-}
-
-function handleTouchEnd() {
-    isDragging = false;
-    joystick.style.transform = "translate(-50%, -50%)";
-    joystickPosition.x = 0;
-    joystickPosition.y = 0;
-}
-
     window.addEventListener('resize', function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -480,6 +478,53 @@ function handleTouchEnd() {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    // Joystick logic
+    let isDragging = false;
+    const joystickContainer = document.getElementById('joystickContainer');
+    const joystick = document.getElementById('joystick');
+    const joystickPosition = { x: 0, y: 0 };
+
+    joystickContainer.addEventListener('touchstart', handleTouchStart, false);
+    joystickContainer.addEventListener('touchmove', handleTouchMove, false);
+    joystickContainer.addEventListener('touchend', handleTouchEnd, false);
+
+    function handleTouchStart(event) {
+        isDragging = true;
+        handleTouchMove(event);
+    }
+
+    function handleTouchMove(event) {
+        if (!isDragging) return;
+
+        event.preventDefault();
+        const rect = joystickContainer.getBoundingClientRect();
+        const touch = event.touches[0];
+        const dx = touch.clientX - rect.left - rect.width / 2;
+        const dy = touch.clientY - rect.top - rect.height / 2;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = rect.width / 2;
+
+        if (distance < maxDistance) {
+            joystick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystickPosition.x = dx / maxDistance;
+            joystickPosition.y = dy / maxDistance;
+        } else {
+            const angle = Math.atan2(dy, dx);
+            const limitedX = Math.cos(angle) * maxDistance;
+            const limitedY = Math.sin(angle) * maxDistance;
+            joystick.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
+            joystickPosition.x = limitedX / maxDistance;
+            joystickPosition.y = limitedY / maxDistance;
+        }
+    }
+
+    function handleTouchEnd() {
+        isDragging = false;
+        joystick.style.transform = "translate(-50%, -50%)";
+        joystickPosition.x = 0;
+        joystickPosition.y = 0;
+    }
 
 </script>
 
