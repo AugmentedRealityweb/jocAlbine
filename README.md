@@ -89,7 +89,7 @@
     </select>
     <br><br>
     <label for="numParticles">Number of initial particles:</label>
-    <input type="number" id="numParticles" min="10" max="5000" value="5000">
+    <input type="number" id="numParticles" min="10" max="200" value="50">
     <br><br>
     <label for="difficulty">Difficulty:</label>
     <select id="difficulty" onchange="showDifficultyDescription()">
@@ -243,6 +243,17 @@
                 }
             });
 
+            const dxToGoldenCircle = this.x - goldenCircle.x;
+            const dyToGoldenCircle = this.y - goldenCircle.y;
+            const distanceToGoldenCircle = Math.sqrt(dxToGoldenCircle * dxToGoldenCircle + dyToGoldenCircle * dyToGoldenCircle);
+
+            if (distanceToGoldenCircle < goldenCircle.radius + this.size) {
+                const angle = Math.atan2(dyToGoldenCircle, dxToGoldenCircle);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+                return;
+            }
+
             if (closestParticle) {
                 const dx = closestParticle.x - this.x;
                 const dy = closestParticle.y - this.y;
@@ -367,7 +378,7 @@
         particlesArray = [];
         blackParticles = [];
 
-        const numParticles = parseInt(document.getElementById('numParticles').value) || 5000;
+        const numParticles = parseInt(document.getElementById('numParticles').value) || 50;
         for (let i = 0; i < numParticles; i++) {
             const size = Math.random() * 3 + 1;
             const x = Math.random() * (canvas.width - size * 2);
