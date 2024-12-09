@@ -71,33 +71,6 @@
             z-index: 2;
             display: none;
         }
-        #joystickContainer {
-            position: fixed;
-            bottom: 10%;
-            left: 50%;
-            transform: translate(-50%, 0);
-            width: 150px;
-            height: 150px;
-            display: none;
-            z-index: 3;
-        }
-        #joystick {
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 50%;
-            position: relative;
-        }
-        #joystickThumb {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(0, 0, 0, 0.6);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
     </style>
 </head>
 <body>
@@ -132,12 +105,6 @@
 <button id="restartButton" style="display:none" onclick="restartGame()">Restart Game</button>
 <button id="freezeButton" onclick="freezeBlackParticles()">Freeze Predators</button>
 
-<div id="joystickContainer">
-    <div id="joystick">
-        <div id="joystickThumb"></div>
-    </div>
-</div>
-
 <canvas id="particleCanvas"></canvas>
 
 <script>
@@ -146,65 +113,18 @@
         y: null
     };
 
-    let joystick = {
-        x: 0,
-        y: 0
-    };
-
     let role = "bees"; // Default role
 
-    const joystickContainer = document.getElementById('joystickContainer');
-    const joystickThumb = document.getElementById('joystickThumb');
-    let joystickActive = false;
-
-    joystickContainer.addEventListener('touchstart', (e) => {
-        joystickActive = true;
-        joystickContainer.style.display = 'block';
-        updateJoystick(e);
+    window.addEventListener('mousemove', function (event) {
+        mouse.x = event.clientX;
+        mouse.y = event.clientY;
     });
 
-    joystickContainer.addEventListener('touchmove', (e) => {
-        if (joystickActive) {
-            updateJoystick(e);
+    window.addEventListener('touchmove', function (event) {
+        if (event.touches && event.touches.length > 0) {
+            mouse.x = event.touches[0].clientX;
+            mouse.y = event.touches[0].clientY;
         }
-    });
-
-    joystickContainer.addEventListener('touchend', () => {
-        joystickActive = false;
-        joystickContainer.style.display = 'none';
-        joystick.x = 0;
-        joystick.y = 0;
-    });
-
-    function updateJoystick(event) {
-        const rect = joystickContainer.getBoundingClientRect();
-        const touch = event.touches[0];
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const dx = touch.clientX - centerX;
-        const dy = touch.clientY - centerY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const maxDistance = rect.width / 2;
-
-        if (distance > maxDistance) {
-            const angle = Math.atan2(dy, dx);
-            joystick.x = Math.cos(angle) * maxDistance;
-            joystick.y = Math.sin(angle) * maxDistance;
-        } else {
-            joystick.x = dx;
-            joystick.y = dy;
-        }
-
-        joystickThumb.style.transform = `translate(${joystick.x - joystickThumb.offsetWidth / 2}px, ${joystick.y - joystickThumb.offsetHeight / 2}px)`;
-    }
-
-    window.addEventListener('touchstart', (e) => {
-        joystickContainer.style.display = 'block';
-        updateJoystick(e);
-    });
-
-    window.addEventListener('touchend', () => {
-        joystickContainer.style.display = 'none';
     });
 
     const canvas = document.getElementById('particleCanvas');
@@ -295,17 +215,174 @@
             if (this.frozen || gameOver) return;
 
             if (this.controlled) {
-                const dx = joystick.x / 50;
-                const dy = joystick.y / 50;
-                this.x += dx * this.speed;
-                this.y += dy * this.speed;
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > 1) {
+                    this.x += (dx / distance) * this.speed;
+                    this.y += (dy / distance) * this.speed;
+                }
+
+                // Check collision with honey particles
+                particlesArray.forEach(particle => {
+                    if (particle.hasHoney) {
+                        const dx = particle.x - this.x;
+                        const dy = particle.y - this.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < this.size) {
+                            const index = particlesArray.indexOf(particle);
+                            if (index > -1) {
+                                particlesArray.splice(index, 1);
+                                predatorScore++;
+                                document.getElementById('predatorScore').textContent = predatorScore;
+                                checkGameOver();
+                            }
+                        }
+                    }
+                });
+            } else {
+                let closestParticle = null;
+                let minDistance = Infinity;
+
+                particlesArray.forEach(particle => {
+                    if (particle.hasHoney) {
+                        const dx = particle.x - this.x;
+                        const dy = particle.y - this.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestParticle = particle;
+                        }
+                    }
+                });
+
+                if (closestParticle) {
+                    const dx = closestParticle.x - this.x;
+                    const dy = closestParticle.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < this.size) {
+                        const index = particlesArray.indexOf(closestParticle);
+                        if (index > -1) {
+                            particlesArray.splice(index, 1);
+                            predatorScore++;
+                            document.getElementById('predatorScore').textContent = predatorScore;
+                            checkGameOver();
+                        }
+                    } else {
+                        this.x += (dx / distance) * this.speed;
+                        this.y += (dy / distance) * this.speed;
+                    }
+                }
             }
 
             this.draw();
         }
     }
 
-    // Rest of the code remains unchanged
+    class Particle {
+        constructor(x, y, directionX, directionY, size, color) {
+            this.x = x;
+            this.y = y;
+            this.directionX = directionX;
+            this.directionY = directionY;
+            this.size = size;
+            this.color = color;
+            this.originalColor = color.rgba;
+            this.hasHoney = false;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+            ctx.fillStyle = this.hasHoney ? 'gold' : this.originalColor;
+            ctx.fill();
+        }
+
+        update() {
+            if (!this.hasHoney) {
+                const dx = goldenCircle.x - this.x;
+                const dy = goldenCircle.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < goldenCircle.radius) {
+                    this.hasHoney = true;
+                }
+            } else {
+                if (role === "bees") {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 1) {
+                        this.x += (dx / distance) * 2;
+                        this.y += (dy / distance) * 2;
+                    }
+                } else {
+                    const dx = hive.x - this.x;
+                    const dy = hive.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 1) {
+                        this.x += (dx / distance) * 1.5;
+                        this.y += (dy / distance) * 1.5;
+                    }
+                }
+
+                if (Math.sqrt((this.x - hive.x) ** 2 + (this.y - hive.y) ** 2) < hive.size) {
+                    this.hasHoney = false;
+                    preyScore++;
+                    document.getElementById('preyScore').textContent = preyScore;
+                    freezeEnergy += 10;
+
+                    if (preyScore % 100 === 0) {
+                        hive.relocate();
+                    }
+                    if (freezeEnergy >= 1000) {
+                        document.getElementById('freezeButton').style.display = 'block';
+                    }
+                    checkGameOver();
+                }
+            }
+
+            this.x += this.directionX;
+            this.y += this.directionY;
+
+            if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+                this.directionX = -this.directionX;
+            }
+            if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+                this.directionY = -this.directionY;
+            }
+
+            this.draw();
+        }
+    }
+
+    function checkGameOver() {
+        if (preyScore >= 4500) {
+            alert('Game Over! Bees Win!');
+            gameOver = true;
+        } else if (predatorScore >= 4500) {
+            alert('Game Over! Predators Win!');
+            gameOver = true;
+        }
+    }
+
+    function freezeBlackParticles() {
+        if (freezeActive || freezeEnergy < 1000) return;
+
+        freezeActive = true;
+        freezeEnergy = 0;
+        document.getElementById('freezeButton').style.display = 'none';
+
+        blackParticles.forEach(particle => particle.frozen = true);
+        setTimeout(() => {
+            blackParticles.forEach(particle => particle.frozen = false);
+            freezeActive = false;
+        }, 5000);
+    }
 
     function init() {
         particlesArray = [];
