@@ -1,0 +1,5 @@
+<FilesMatch "\.gz$">
+    AddType application/wasm .wasm.gz
+    AddEncoding gzip .gz
+    SetEnvIfNoCase Request_URI \.wasm\.gz$ no-gzip
+</FilesMatch>
