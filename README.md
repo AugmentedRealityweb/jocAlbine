@@ -226,7 +226,7 @@
         }
 
         adjustSizeForDevice() {
-            if (window.innerWidth < 768) { // Mobile devices
+            if (window.innerWidth < 1268) { // Mobile devices
                 this.size = this.originalSize * 0.5;
             } else {
                 this.size = this.originalSize;
