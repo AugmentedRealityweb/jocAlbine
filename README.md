@@ -201,7 +201,7 @@
 
         adjustSizeForDevice() {
             if (window.innerWidth < 1268) { // Mobile devices
-                this.radius = this.originalRadius * 0.5;
+                this.radius = this.originalRadius *1;
             } else {
                 this.radius = this.originalRadius;
             }
@@ -227,7 +227,7 @@
 
         adjustSizeForDevice() {
             if (window.innerWidth < 1268) { // Mobile devices
-                this.size = this.originalSize * 0.5;
+                this.size = this.originalSize * 1;
             } else {
                 this.size = this.originalSize;
             }
