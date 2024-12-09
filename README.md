@@ -267,8 +267,8 @@
                     const dx = joystickPosition.x;
                     const dy = joystickPosition.y;
                     if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                        this.vx = dx * this.speed * 1.5;
-                        this.vy = dy * this.speed * 1.5;
+                        this.vx = dx * this.speed * 2;
+                        this.vy = dy * this.speed * 2;
                     } else {
                         this.vx = 0;
                         this.vy = 0;
