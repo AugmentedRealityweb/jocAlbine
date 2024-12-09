@@ -94,8 +94,7 @@
             background: rgba(255, 255, 255, 0.7);
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            /* Eliminam transition pentru a nu exista delay la miscare */
-            transition: transform 0s;
+            /* Fara transition pentru a evita delay */
         }
     </style>
 </head>
@@ -143,19 +142,17 @@
     let mouse = { x: null, y: null };
     let role = "bees"; // Default role
 
-    // Flag-uri pentru adăugarea bondarului dublu
-    let giantWaspAddedForBees = false;
-    let giantWaspAddedForPredators = false;
+    // Un singur flag pentru bondarul uriaș
+    let giantWaspAdded = false;
 
     window.addEventListener('mousemove', function (event) {
-        if(!isMobile) {
-            mouse.x = event.clientX;
-            mouse.y = event.clientY;
-        }
+        mouse.x = event.clientX;
+        mouse.y = event.clientY;
     });
 
+    // Pe mobil, actualizam mouse.x, mouse.y la touchmove, fara conditii
     window.addEventListener('touchmove', function (event) {
-        if(!isMobile && event.touches && event.touches.length > 0) {
+        if (event.touches && event.touches.length > 0) {
             mouse.x = event.touches[0].clientX;
             mouse.y = event.touches[0].clientY;
         }
@@ -185,6 +182,10 @@
     ];
 
     const joystickPosition = { x: 0, y: 0 };
+
+    // Imagine polen
+    const pollenImage = new Image();
+    pollenImage.src = 'https://clipart-library.com/images/5cRdXKbca.png';
 
     class Hive {
         constructor(x, y, size) {
@@ -255,9 +256,8 @@
 
             if (this.controlled) {
                 // Bondar controlat
-                // Joystick apare doar daca role = wasps si isMobile = true
                 if (isMobile && role === "wasps") {
-                    // Mișcare cu joystick
+                    // Mișcare cu joystick - fără delay (am eliminat preventDefault)
                     const dx = joystickPosition.x;
                     const dy = joystickPosition.y;
                     if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
@@ -268,7 +268,7 @@
                         this.vy = 0;
                     }
                 } else {
-                    // Daca role=bees sau PC, control prin mouse (fara joystick)
+                    // Albine pe mobil sau PC - urmeaza mouse.x, mouse.y
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -281,11 +281,10 @@
                     }
                 }
 
-                // Actualizăm poziția
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Verificăm coliziunile cu albinele cu miere
+                // Coliziune cu particule cu polen
                 particlesArray.forEach(particle => {
                     if (particle.hasHoney) {
                         const distX = particle.x - this.x;
@@ -364,7 +363,6 @@
                     this.vy = 0;
                 }
 
-                // Actualizăm poziția
                 this.x += this.vx;
                 this.y += this.vy;
 
@@ -403,10 +401,16 @@
         }
 
         draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-            ctx.fillStyle = this.hasHoney ? 'gold' : this.originalColor;
-            ctx.fill();
+            if (this.hasHoney) {
+                // Daca are polen, desenam imaginea
+                ctx.drawImage(pollenImage, this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+            } else {
+                // Fara polen, cerc normal
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.originalColor;
+                ctx.fill();
+            }
         }
 
         update() {
@@ -419,9 +423,8 @@
                     this.hasHoney = true;
                 }
             } else {
-                // Albine cu miere
                 if (role === "bees") {
-                    // Daca e mobil, dar role=bees, comportament ca pe PC => urmareste mouse-ul
+                    // Albine pe mobil se comporta ca pe PC: urmeaza mouse.x,y
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -456,7 +459,6 @@
                 }
             }
 
-            // Misca particula
             this.x += this.directionX;
             this.y += this.directionY;
 
@@ -473,19 +475,13 @@
     }
 
     function handleScoreEvents() {
-        // Cand scorul albinelor (preyScore) ajunge la 2000, adaugam un bondar gigantic (o singura data)
-        if (preyScore >= 2000 && !giantWaspAddedForBees) {
+        // Cand scorul atinge 2000 (fie pentru albine, fie prădători), adaugă bondar uriaș o singură dată
+        if (!giantWaspAdded && (preyScore >= 2000 || predatorScore >= 2000)) {
             addGiantWasp();
-            giantWaspAddedForBees = true;
+            giantWaspAdded = true;
         }
 
-        // Cand scorul pradatorilor (predatorScore) ajunge la 2000, adaugam un bondar gigantic (o singura data)
-        if (predatorScore >= 2000 && !giantWaspAddedForPredators) {
-            addGiantWasp();
-            giantWaspAddedForPredators = true;
-        }
-
-        // De asemenea, daca freezeEnergy >= 1000, butonul apare
+        // Daca freezeEnergy >= 1000, butonul apare
         if (freezeEnergy >= 1000) {
             document.getElementById('freezeButton').style.display = 'block';
         }
@@ -494,7 +490,6 @@
     }
 
     function addGiantWasp() {
-        // Adauga un bondar dublu ca dimensiune (size=20)
         const size = 20;
         const x = Math.random() * (canvas.width - size * 2) + size;
         const y = Math.random() * (canvas.height - size * 2) + size;
@@ -530,6 +525,7 @@
     function init() {
         particlesArray = [];
         blackParticles = [];
+        giantWaspAdded = false;
 
         const numParticles = parseInt(document.getElementById('numParticles').value) || 500;
         for (let i = 0; i < numParticles; i++) {
@@ -593,15 +589,15 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Joystick logic (folosit doar pe mobil si doar daca role=wasps)
+    // Joystick logic (doar daca isMobile si role=wasps)
     let isDragging = false;
     const joystickContainer = document.getElementById('joystickContainer');
     const joystick = document.getElementById('joystick');
 
     if (isMobile) {
-        joystickContainer.addEventListener('touchstart', handleTouchStart, false);
-        joystickContainer.addEventListener('touchmove', handleTouchMove, false);
-        joystickContainer.addEventListener('touchend', handleTouchEnd, false);
+        joystickContainer.addEventListener('touchstart', handleTouchStart, {passive:true});
+        joystickContainer.addEventListener('touchmove', handleTouchMove, {passive:false});
+        joystickContainer.addEventListener('touchend', handleTouchEnd, {passive:true});
     }
 
     function handleTouchStart(event) {
@@ -612,7 +608,6 @@
     function handleTouchMove(event) {
         if (!isDragging) return;
 
-        event.preventDefault();
         const rect = joystickContainer.getBoundingClientRect();
         const touch = event.touches[0];
         const dx = touch.clientX - rect.left - rect.width / 2;
