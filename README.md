@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,8 +104,8 @@
 
 <div id="hud" style="display:none">
     <p>Scor Albine: <span id="preyScore">0</span></p>
-    <p>Scor Bondari: <span id="predatorScore">0</span></p>
-    <p>Număr Bondari: <span id="numPredators">3</span></p>
+    <p>Scor Prădători: <span id="predatorScore">0</span></p>
+    <p>Număr Prădători: <span id="numPredators">3</span></p>
     <div id="colorScores"></div>
     <div id="goalRanking"></div>
 </div>
@@ -137,6 +136,7 @@
     let predatorScore = 0;
     let freezeActive = false;
     let freezeEnergy = 0;
+    let gameOver = false;
 
     const particleColors = [
         { name: 'Roșu', rgba: 'rgba(255, 0, 0, 0.5)' },
@@ -209,7 +209,7 @@
         }
 
         update() {
-            if (this.frozen) return;
+            if (this.frozen || gameOver) return;
 
             let closestParticle = null;
             let minDistance = Infinity;
@@ -238,6 +238,7 @@
                         particlesArray.splice(index, 1);
                         predatorScore++;
                         document.getElementById('predatorScore').textContent = predatorScore;
+                        checkGameOver();
                     }
                 } else {
                     this.x += (dx / distance) * this.speed;
@@ -304,6 +305,7 @@
                     if (freezeEnergy >= 10000) {
                         document.getElementById('freezeButton').style.display = 'block';
                     }
+                    checkGameOver();
                 }
             }
 
@@ -318,6 +320,16 @@
             }
 
             this.draw();
+        }
+    }
+
+    function checkGameOver() {
+        if (preyScore >= 4500) {
+            alert('Game Over! Bees Win!');
+            gameOver = true;
+        } else if (predatorScore >= 4500) {
+            alert('Game Over! Predators Win!');
+            gameOver = true;
         }
     }
 
@@ -362,6 +374,8 @@
     }
 
     function animate() {
+        if (gameOver) return;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         goldenCircle.draw();
         hive.draw();
@@ -379,11 +393,17 @@
         animate();
     }
 
-    window.addEventListener('resize', function() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        init();
-    });
+    window.addEventListener('mousemove', function (event) {
+    mouse.x = event.clientX;
+    mouse.y = event.clientY;
+});
+
+window.addEventListener('touchmove', function (event) {
+    if (event.touches && event.touches.length > 0) {
+        mouse.x = event.touches[0].clientX;
+        mouse.y = event.touches[0].clientY;
+    }
+});
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
