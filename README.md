@@ -415,7 +415,67 @@
 
         hive = new Hive(canvas.width / 2, canvas.height / 2 + 200, 40);
     }
+function handleTouchStart(event) {
+        isDragging = true;
+        handleTouchMove(event);
+    }
 
+    function handleTouchMove(event) {
+        if (!isDragging) return;
+
+        const rect = joystickContainer.getBoundingClientRect();
+        const touch = event.touches[0];
+        const dx = touch.clientX - rect.left - rect.width / 2;
+        const dy = touch.clientY - rect.top - rect.height / 2;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = rect.width / 2;
+
+        if (distance < maxDistance) {
+            joystick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystickPosition.x = dx / maxDistance;
+            joystickPosition.y = dy / maxDistance;
+        } else {
+            const angle = Math.atan2(dy, dx);
+            const limitedX = Math.cos(angle) * maxDistance;
+            const limitedY = Math.sin(angle) * maxDistance;
+            joystick.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
+            joystickPosition.x = limitedX / maxDistance;
+            joystickPosition.y = limitedY / maxDistance;
+        }
+    }
+
+    function handleTouchEnd() {
+        isDragging = false;
+        joystick.style.transform = "translate(-50%, -50%)";
+        joystickPosition.x = 0;
+        joystickPosition.y = 0;
+    }
+
+    // Update controlled black particle position based on joystick
+    function updateControlledParticle() {
+        if (controlledBlackParticle) {
+            controlledBlackParticle.x += joystickPosition.x * controlledBlackParticle.speed;
+            controlledBlackParticle.y += joystickPosition.y * controlledBlackParticle.speed;
+
+            controlledBlackParticle.x = Math.max(0, Math.min(canvas.width, controlledBlackParticle.x));
+            controlledBlackParticle.y = Math.max(0, Math.min(canvas.height, controlledBlackParticle.y));
+        }
+    }
+
+    function animate() {
+        if (gameOver) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        goldenCircle.draw();
+        hive.draw();
+        blackParticles.forEach(blackParticle => blackParticle.update());
+        particlesArray.forEach(particle => particle.update());
+        updateControlledParticle();
+        requestAnimationFrame(animate);
+    }
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     function animate() {
         if (gameOver) return;
 
@@ -444,6 +504,7 @@
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
 </script>
 
 </body>
