@@ -502,7 +502,7 @@
                     if (preyScore % 100 === 0) {
                         hive.relocate();
                     }
-                    if (freezeEnergy >= 1000) {
+                    if (freezeEnergy >= 10000) {
                         document.getElementById('freezeButton').style.display = 'block';
                     }
                     checkGameOver();
