@@ -77,27 +77,19 @@
 
 <div id="menu">
     <h2>Particle Simulation Settings</h2>
-    <p>Alege o culoare și vezi dacă aceea va domina în final. Setează dificultatea pentru a ajusta viteza particulelor.</p>
-    <label for="color">Choose your color:</label>
-    <select id="color">
-        <option value="rgba(255, 0, 0, 0.5)">Roșu</option>
-        <option value="rgba(0, 128, 0, 0.5)">Verde</option>
-        <option value="rgba(0, 0, 255, 0.5)">Albastru</option>
-        <option value="rgba(255, 165, 0, 0.5)">Portocaliu</option>
-        <option value="rgba(128, 0, 128, 0.5)">Mov</option>
-        <option value="rgba(0, 255, 255, 0.5)">Cyan</option>
+    <p>Alege rolul tău în joc:</p>
+    <label for="role">Select Role:</label>
+    <select id="role">
+        <option value="bees">Albine</option>
+        <option value="wasps">Bondari</option>
     </select>
     <br><br>
-    <label for="numParticles">Number of initial particles:</label>
-    <input type="number" id="numParticles" min="10" max="200" value="50">
-    <br><br>
-    <label for="difficulty">Difficulty:</label>
-    <select id="difficulty" onchange="showDifficultyDescription()">
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
+    <label for="numParticles">Număr de albine:</label>
+    <select id="numParticles">
+        <option value="500">500</option>
+        <option value="2000">2000</option>
+        <option value="5000">5000</option>
     </select>
-    <p id="difficultyDescription">Easy = viteza redusă a particulelor; Hard = viteza crescută.</p>
     <br><br>
     <button onclick="startGame()">Start Game</button>
 </div>
@@ -121,6 +113,8 @@
         y: null
     };
 
+    let role = "bees"; // Default role
+
     window.addEventListener('mousemove', function (event) {
         mouse.x = event.clientX;
         mouse.y = event.clientY;
@@ -137,6 +131,7 @@
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
     let blackParticles = [];
+    let controlledBlackParticle;
     let goldenCircle;
     let hive;
     let preyScore = 0;
@@ -204,72 +199,81 @@
             this.x = x;
             this.y = y;
             this.size = size;
-            this.originalSize = size;
             this.speed = 1.5;
             this.frozen = false;
+            this.controlled = false;
         }
 
         draw() {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-            ctx.fillStyle = this.frozen ? 'gray' : 'black';
+            ctx.fillStyle = this.frozen ? 'gray' : (this.controlled ? 'blue' : 'black');
             ctx.fill();
-        }
-
-        adjustSizeForDevice() {
-            if (window.innerWidth < 768) { // Mobile devices
-                this.size = this.originalSize * 0.5;
-            } else {
-                this.size = this.originalSize;
-            }
         }
 
         update() {
             if (this.frozen || gameOver) return;
 
-            let closestParticle = null;
-            let minDistance = Infinity;
-
-            particlesArray.forEach(particle => {
-                if (particle.hasHoney) {
-                    const dx = particle.x - this.x;
-                    const dy = particle.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestParticle = particle;
-                    }
-                }
-            });
-
-            const dxToGoldenCircle = this.x - goldenCircle.x;
-            const dyToGoldenCircle = this.y - goldenCircle.y;
-            const distanceToGoldenCircle = Math.sqrt(dxToGoldenCircle * dxToGoldenCircle + dyToGoldenCircle * dyToGoldenCircle);
-
-            if (distanceToGoldenCircle < goldenCircle.radius + this.size) {
-                const angle = Math.atan2(dyToGoldenCircle, dxToGoldenCircle);
-                this.x += Math.cos(angle) * this.speed;
-                this.y += Math.sin(angle) * this.speed;
-                return;
-            }
-
-            if (closestParticle) {
-                const dx = closestParticle.x - this.x;
-                const dy = closestParticle.y - this.y;
+            if (this.controlled) {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < this.size) {
-                    const index = particlesArray.indexOf(closestParticle);
-                    if (index > -1) {
-                        particlesArray.splice(index, 1);
-                        predatorScore++;
-                        document.getElementById('predatorScore').textContent = predatorScore;
-                        checkGameOver();
-                    }
-                } else {
+                if (distance > 1) {
                     this.x += (dx / distance) * this.speed;
                     this.y += (dy / distance) * this.speed;
+                }
+
+                // Check collision with honey particles
+                particlesArray.forEach(particle => {
+                    if (particle.hasHoney) {
+                        const dx = particle.x - this.x;
+                        const dy = particle.y - this.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < this.size) {
+                            const index = particlesArray.indexOf(particle);
+                            if (index > -1) {
+                                particlesArray.splice(index, 1);
+                                predatorScore++;
+                                document.getElementById('predatorScore').textContent = predatorScore;
+                                checkGameOver();
+                            }
+                        }
+                    }
+                });
+            } else {
+                let closestParticle = null;
+                let minDistance = Infinity;
+
+                particlesArray.forEach(particle => {
+                    if (particle.hasHoney) {
+                        const dx = particle.x - this.x;
+                        const dy = particle.y - this.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestParticle = particle;
+                        }
+                    }
+                });
+
+                if (closestParticle) {
+                    const dx = closestParticle.x - this.x;
+                    const dy = closestParticle.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < this.size) {
+                        const index = particlesArray.indexOf(closestParticle);
+                        if (index > -1) {
+                            particlesArray.splice(index, 1);
+                            predatorScore++;
+                            document.getElementById('predatorScore').textContent = predatorScore;
+                            checkGameOver();
+                        }
+                    } else {
+                        this.x += (dx / distance) * this.speed;
+                        this.y += (dy / distance) * this.speed;
+                    }
                 }
             }
 
@@ -287,7 +291,6 @@
             this.color = color;
             this.originalColor = color.rgba;
             this.hasHoney = false;
-            this.wobbleAngle = 0;
         }
 
         draw() {
@@ -307,17 +310,24 @@
                     this.hasHoney = true;
                 }
             } else {
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (role === "bees") {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance > 1) {
-                    const speed = 2;
-                    this.wobbleAngle += 0.1;
-                    const wobbleX = Math.sin(this.wobbleAngle) * 2;
-                    const wobbleY = Math.cos(this.wobbleAngle) * 2;
-                    this.x += (dx / distance) * speed + wobbleX;
-                    this.y += (dy / distance) * speed + wobbleY;
+                    if (distance > 1) {
+                        this.x += (dx / distance) * 2;
+                        this.y += (dy / distance) * 2;
+                    }
+                } else {
+                    const dx = hive.x - this.x;
+                    const dy = hive.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 1) {
+                        this.x += (dx / distance) * 1.5;
+                        this.y += (dy / distance) * 1.5;
+                    }
                 }
 
                 if (Math.sqrt((this.x - hive.x) ** 2 + (this.y - hive.y) ** 2) < hive.size) {
@@ -378,7 +388,7 @@
         particlesArray = [];
         blackParticles = [];
 
-        const numParticles = parseInt(document.getElementById('numParticles').value) || 50;
+        const numParticles = parseInt(document.getElementById('numParticles').value) || 500;
         for (let i = 0; i < numParticles; i++) {
             const size = Math.random() * 3 + 1;
             const x = Math.random() * (canvas.width - size * 2);
@@ -394,7 +404,10 @@
             const x = Math.random() * (canvas.width - size * 2) + size;
             const y = Math.random() * (canvas.height - size * 2) + size;
             const blackParticle = new BlackParticle(x, y, size);
-            blackParticle.adjustSizeForDevice();
+            if (role === "wasps" && i === 0) {
+                blackParticle.controlled = true;
+                controlledBlackParticle = blackParticle;
+            }
             blackParticles.push(blackParticle);
         }
 
@@ -415,6 +428,7 @@
     }
 
     function startGame() {
+        role = document.getElementById('role').value;
         document.getElementById('menu').style.display = 'none';
         document.getElementById('hud').style.display = 'block';
         canvas.width = window.innerWidth;
@@ -426,7 +440,6 @@
     window.addEventListener('resize', function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        blackParticles.forEach(particle => particle.adjustSizeForDevice());
     });
 
     canvas.width = window.innerWidth;
