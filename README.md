@@ -200,8 +200,8 @@
         }
 
         adjustSizeForDevice() {
-            if (window.innerWidth < 1268) { // Mobile devices
-                this.radius = this.originalRadius *1;
+            if (window.innerWidth < 768) { // Mobile devices
+                this.radius = this.originalRadius * 0.5;
             } else {
                 this.radius = this.originalRadius;
             }
@@ -226,8 +226,8 @@
         }
 
         adjustSizeForDevice() {
-            if (window.innerWidth < 1268) { // Mobile devices
-                this.size = this.originalSize * 1;
+            if (window.innerWidth < 768) { // Mobile devices
+                this.size = this.originalSize * 0.5;
             } else {
                 this.size = this.originalSize;
             }
@@ -327,7 +327,7 @@
                     if (preyScore % 100 === 0) {
                         hive.relocate();
                     }
-                    if (freezeEnergy >= 1000) {
+                    if (freezeEnergy >= 10000) {
                         document.getElementById('freezeButton').style.display = 'block';
                     }
                     checkGameOver();
