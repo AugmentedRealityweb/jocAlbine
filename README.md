@@ -250,7 +250,7 @@
             this.x = x;
             this.y = y;
             this.size = size;
-            this.speed = 1.5; // viteza normală
+            this.speed = 2; // viteza normală
             this.frozen = false;
             this.controlled = false;
             this.vx = 0;
@@ -411,7 +411,7 @@
 
         draw() {
             if (this.hasHoney) {
-                ctx.drawImage(pollenImage, this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+                ctx.drawImage(pollenImage, this.x - this.size, this.y - this.size, this.size * 5, this.size * 5);
             } else {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
