@@ -1092,6 +1092,6 @@ document.addEventListener('DOMContentLoaded',()=>{
         game.freezeBlackParticles();
     });
 });
-<script>elevenlabs-convai agent-id="5mz0QGMTS6vciobpmiXO"></elevenlabs-convai><script src="https://elevenlabs.io/convai-widget/index.js" async type="text/javascript"></script>
+</script>
 </body>
 </html>
