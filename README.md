@@ -9,12 +9,8 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Background image */
             background: url('https://img.freepik.com/premium-photo/background-honeycomb-is-made-honeycomb_947814-201763.jpg') no-repeat center center fixed;
             background-size: cover;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             overflow: hidden;
         }
 
@@ -27,27 +23,55 @@
             pointer-events: none;
             z-index: 1;
         }
+
         #menu {
             position: fixed;
             top: 20%;
             left: 50%;
             transform: translate(-50%, -20%);
-            background-color: #fff;
+            background-color: rgba(255,255,255,0.9);
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
             z-index: 2;
+            text-align: center;
         }
+        #menu h2 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #333;
+        }
+        #menu label, #menu select {
+            font-size: 16px;
+            color: #333;
+        }
+        #menu button {
+            margin-top: 20px;
+            background: #fbc02d;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        #menu button:hover {
+            background: #fdd835;
+        }
+
         #hud {
             position: fixed;
             top: 10px;
             left: 10px;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 10px;
             font-size: 14px;
             z-index: 1;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
         }
+
         #restartButton {
             position: fixed;
             top: 10px;
@@ -55,11 +79,16 @@
             background-color: #a1887f;
             color: #ffffff;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             padding: 10px;
             cursor: pointer;
             z-index: 2;
+            display: none;
         }
+        #restartButton:hover {
+            background-color: #8d6e63;
+        }
+
         #freezeButton {
             position: fixed;
             bottom: 10px;
@@ -67,11 +96,14 @@
             background-color: #4caf50;
             color: #ffffff;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             padding: 10px;
             cursor: pointer;
             z-index: 2;
             display: none;
+        }
+        #freezeButton:hover {
+            background-color: #43a047;
         }
 
         /* Joystick styles */
@@ -113,7 +145,7 @@
     <br /><br />
     <label for="numParticles">Număr de albine:</label>
     <select id="numParticles">
-        <option value="500">500</option>
+        <!-- Am eliminat optiunea 500 -->
         <option value="2000">2000</option>
         <option value="5000">5000</option>
     </select>
@@ -125,11 +157,9 @@
     <p>Scor Albine: <span id="preyScore">0</span></p>
     <p>Scor Prădători: <span id="predatorScore">0</span></p>
     <p>Număr Prădători: <span id="numPredators">3</span></p>
-    <div id="colorScores"></div>
-    <div id="goalRanking"></div>
 </div>
 
-<button id="restartButton" style="display:none" onclick="restartGame()">Restart Game</button>
+<button id="restartButton" onclick="restartGame()">Restart Game</button>
 <button id="freezeButton" onclick="freezeBlackParticles()">Freeze Predators</button>
 
 <!-- Joystick elements -->
@@ -144,7 +174,6 @@
     let mouse = { x: null, y: null };
     let role = "bees"; // Default role
 
-    // Un singur flag pentru bondarul uriaș
     let giantWaspAdded = false;
 
     window.addEventListener('mousemove', function (event) {
@@ -173,7 +202,6 @@
     let freezeEnergy = 0;
     let gameOver = false;
 
-    // Culori pastelate moderne pentru particulele fara polen
     const particleColors = [
         { name: 'Pastel Pink', rgba: 'rgba(224, 118, 37, 0.8)' },
         { name: 'Pastel Orange', rgba: 'rgba(32, 98, 26, 0.8)' },
@@ -185,11 +213,9 @@
 
     const joystickPosition = { x: 0, y: 0 };
 
-    // Imagine polen
     const pollenImage = new Image();
     pollenImage.src = 'https://clipart-library.com/images/5cRdXKbca.png';
 
-    // Imagine bondar
     const waspImage = new Image();
     waspImage.src = 'https://www.pngall.com/wp-content/uploads/13/Wasp-Bee.png';
 
@@ -231,16 +257,14 @@
         }
 
         draw() {
-            // Creat un gradient radial pentru a parea polen
             const gradient = ctx.createRadialGradient(this.x, this.y, this.radius * 0.1, this.x, this.y, this.radius);
-            gradient.addColorStop(0, 'rgba(255, 255, 150, 1)'); // galben deschis
-            gradient.addColorStop(1, 'rgba(255, 204, 0, 0.8)'); // galben inchis
+            gradient.addColorStop(0, 'rgba(255, 255, 150, 1)');
+            gradient.addColorStop(1, 'rgba(255, 204, 0, 0.8)');
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
             ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Optional: un contur fin
             ctx.strokeStyle = 'rgba(255, 204, 0, 0.5)';
             ctx.lineWidth = 2;
             ctx.stroke();
@@ -259,7 +283,7 @@
             this.x = x;
             this.y = y;
             this.size = size;
-            this.speed = 2; // viteza normală (putem ajusta daca vrei)
+            this.speed = 2;
             this.frozen = false;
             this.controlled = false;
             this.vx = 0;
@@ -268,6 +292,15 @@
 
         draw() {
             ctx.drawImage(waspImage, this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+
+            // Adaugam o aura daca bondarul este controlat si role=wasps
+            if (this.controlled && role === "wasps") {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size*2, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(0,255,0,0.5)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
         }
 
         update() {
@@ -287,10 +320,10 @@
                 } else {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const distance = Math.sqrt(dx*dx + dy*dy);
                     if (distance > 1) {
-                        this.vx = (dx / distance) * this.speed;
-                        this.vy = (dy / distance) * this.speed;
+                        this.vx = (dx/distance)*this.speed;
+                        this.vy = (dy/distance)*this.speed;
                     } else {
                         this.vx = 0;
                         this.vy = 0;
@@ -300,11 +333,12 @@
                 this.x += this.vx;
                 this.y += this.vy;
 
+                // Mananca particule cu polen in afara cercului
                 particlesArray.forEach(particle => {
                     if (particle.hasHoney && !isInsideGoldenCircle(particle)) {
                         const distX = particle.x - this.x;
                         const distY = particle.y - this.y;
-                        const distance = Math.sqrt(distX * distX + distY * distY);
+                        const distance = Math.sqrt(distX*distX + distY*distY);
                         if (distance < this.size + particle.size) {
                             const index = particlesArray.indexOf(particle);
                             if (index > -1) {
@@ -317,34 +351,15 @@
                     }
                 });
 
-                // Bounce la margini
-                if (this.x + this.size > canvas.width) {
-                    this.x = canvas.width - this.size;
-                    this.vx = -this.vx;
-                } else if (this.x - this.size < 0) {
-                    this.x = this.size;
-                    this.vx = -this.vx;
-                }
-
-                if (this.y + this.size > canvas.height) {
-                    this.y = canvas.height - this.size;
-                    this.vy = -this.vy;
-                } else if (this.y - this.size < 0) {
-                    this.y = this.size;
-                    this.vy = -this.vy;
-                }
-
-                this.draw();
-
             } else {
                 let closestParticle = null;
                 let minDistance = Infinity;
 
                 for (let particle of particlesArray) {
-                    if (particle.hasHoney) {
+                    if (particle.hasHoney && !isInsideGoldenCircle(particle)) {
                         const dx = particle.x - this.x;
                         const dy = particle.y - this.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const distance = Math.sqrt(dx*dx + dy*dy);
                         if (distance < minDistance) {
                             minDistance = distance;
                             closestParticle = particle;
@@ -352,10 +367,10 @@
                     }
                 }
 
-                if (closestParticle && !isInsideGoldenCircle(closestParticle)) {
+                if (closestParticle) {
                     const dx = closestParticle.x - this.x;
                     const dy = closestParticle.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const distance = Math.sqrt(dx*dx + dy*dy);
 
                     if (distance < this.size) {
                         const index = particlesArray.indexOf(closestParticle);
@@ -368,37 +383,42 @@
                         this.vx = 0;
                         this.vy = 0;
                     } else {
-                        this.vx = (dx / distance) * this.speed;
-                        this.vy = (dy / distance) * this.speed;
+                        this.vx = (dx/distance)*this.speed;
+                        this.vy = (dy/distance)*this.speed;
                     }
                 } else {
-                    // Nicio țintă sau ținta e in cerc auriu
-                    this.vx = 0;
-                    this.vy = 0;
+                    // Daca nu exista nicio tinta disponibila (afara cercului)
+                    // bondarul se misca usor intr-o directie aleatoare pentru a nu ramane blocat
+                    if (Math.abs(this.vx)<0.01 && Math.abs(this.vy)<0.01) {
+                        // genereaza directie aleatoare
+                        const angle = Math.random()*Math.PI*2;
+                        this.vx = Math.cos(angle)*0.5; 
+                        this.vy = Math.sin(angle)*0.5;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
                 }
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Bounce la margini
-                if (this.x + this.size > canvas.width) {
-                    this.x = canvas.width - this.size;
-                    this.vx = -this.vx;
-                } else if (this.x - this.size < 0) {
-                    this.x = this.size;
-                    this.vx = -this.vx;
-                }
-
-                if (this.y + this.size > canvas.height) {
-                    this.y = canvas.height - this.size;
-                    this.vy = -this.vy;
-                } else if (this.y - this.size < 0) {
-                    this.y = this.size;
-                    this.vy = -this.vy;
-                }
-
-                this.draw();
             }
+
+            // Bounce la margini
+            if (this.x + this.size > canvas.width) {
+                this.x = canvas.width - this.size;
+                this.vx = -this.vx;
+            } else if (this.x - this.size < 0) {
+                this.x = this.size;
+                this.vx = -this.vx;
+            }
+
+            if (this.y + this.size > canvas.height) {
+                this.y = canvas.height - this.size;
+                this.vy = -this.vy;
+            } else if (this.y - this.size < 0) {
+                this.y = this.size;
+                this.vy = -this.vy;
+            }
+
+            this.draw();
         }
     }
 
@@ -416,11 +436,10 @@
 
         draw() {
             if (this.hasHoney) {
-                // Mărim imaginea polenului un pic, ca să se vadă mai clar
-                ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size * 3, this.size * 3);
+                ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size*3, this.size*3);
             } else {
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2, false);
                 ctx.fillStyle = this.originalColor;
                 ctx.fill();
             }
@@ -430,7 +449,7 @@
             if (!this.hasHoney) {
                 const dx = goldenCircle.x - this.x;
                 const dy = goldenCircle.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                const distance = Math.sqrt(dx*dx + dy*dy);
 
                 if (distance < goldenCircle.radius) {
                     this.hasHoney = true;
@@ -439,18 +458,18 @@
                 if (role === "bees") {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const distance = Math.sqrt(dx*dx + dy*dy);
                     if (distance > 1) {
-                        this.x += (dx / distance) * 2;
-                        this.y += (dy / distance) * 2;
+                        this.x += (dx/distance)*2;
+                        this.y += (dy/distance)*2;
                     }
                 } else {
                     const dx = hive.x - this.x;
                     const dy = hive.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const distance = Math.sqrt(dx*dx + dy*dy);
                     if (distance > 1) {
-                        this.x += (dx / distance) * 1.5;
-                        this.y += (dy / distance) * 1.5;
+                        this.x += (dx/distance)*1.5;
+                        this.y += (dy/distance)*1.5;
                     }
                 }
 
@@ -490,7 +509,6 @@
         }
 
         if (freezeEnergy >= 1000 && role === "bees") {
-            // Freeze button apare doar daca joci cu bees
             document.getElementById('freezeButton').style.display = 'block';
         }
 
@@ -511,9 +529,11 @@
         if (preyScore >= 3000) {
             alert('Game Over! Bees Win!');
             gameOver = true;
+            document.getElementById('restartButton').style.display = 'block';
         } else if (predatorScore >= 3000) {
             alert('Game Over! Predators Win!');
             gameOver = true;
+            document.getElementById('restartButton').style.display = 'block';
         }
     }
 
@@ -536,7 +556,7 @@
         blackParticles = [];
         giantWaspAdded = false;
 
-        const numParticles = parseInt(document.getElementById('numParticles').value) || 500;
+        const numParticles = parseInt(document.getElementById('numParticles').value) || 2000;
         for (let i = 0; i < numParticles; i++) {
             const size = Math.random() * 3 + 1;
             const x = Math.random() * (canvas.width - size * 2);
@@ -582,7 +602,6 @@
         canvas.height = window.innerHeight;
         init();
 
-        // Daca e wasps, ascundem butonul freeze permanent
         if (role === "wasps") {
             document.getElementById('freezeButton').style.display = 'none';
         }
@@ -625,7 +644,7 @@
         const touch = event.touches[0];
         const dx = touch.clientX - rect.left - rect.width / 2;
         const dy = touch.clientY - rect.top - rect.height / 2;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const distance = Math.sqrt(dx*dx + dy*dy);
         const maxDistance = rect.width / 2;
 
         if (distance < maxDistance) {
@@ -634,11 +653,11 @@
             joystickPosition.y = dy / maxDistance;
         } else {
             const angle = Math.atan2(dy, dx);
-            const limitedX = Math.cos(angle) * maxDistance;
-            const limitedY = Math.sin(angle) * maxDistance;
+            const limitedX = Math.cos(angle)*maxDistance;
+            const limitedY = Math.sin(angle)*maxDistance;
             joystick.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
-            joystickPosition.x = limitedX / maxDistance;
-            joystickPosition.y = limitedY / maxDistance;
+            joystickPosition.x = limitedX/maxDistance;
+            joystickPosition.y = limitedY/maxDistance;
         }
     }
 
