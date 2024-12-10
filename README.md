@@ -231,10 +231,19 @@
         }
 
         draw() {
+            // Creat un gradient radial pentru a parea polen
+            const gradient = ctx.createRadialGradient(this.x, this.y, this.radius * 0.1, this.x, this.y, this.radius);
+            gradient.addColorStop(0, 'rgba(255, 255, 150, 1)'); // galben deschis
+            gradient.addColorStop(1, 'rgba(255, 204, 0, 0.8)'); // galben inchis
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            ctx.fillStyle = 'gold';
+            ctx.fillStyle = gradient;
             ctx.fill();
+
+            // Optional: un contur fin
+            ctx.strokeStyle = 'rgba(255, 204, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         }
     }
 
@@ -250,7 +259,7 @@
             this.x = x;
             this.y = y;
             this.size = size;
-            this.speed = 2; // viteza normală
+            this.speed = 2; // viteza normală (putem ajusta daca vrei)
             this.frozen = false;
             this.controlled = false;
             this.vx = 0;
@@ -292,20 +301,17 @@
                 this.y += this.vy;
 
                 particlesArray.forEach(particle => {
-                    if (particle.hasHoney) {
-                        // Bondarul nu mananca daca particula e in cercul auriu
-                        if (!isInsideGoldenCircle(particle)) {
-                            const distX = particle.x - this.x;
-                            const distY = particle.y - this.y;
-                            const distance = Math.sqrt(distX * distX + distY * distY);
-                            if (distance < this.size + particle.size) {
-                                const index = particlesArray.indexOf(particle);
-                                if (index > -1) {
-                                    particlesArray.splice(index, 1);
-                                    predatorScore++;
-                                    document.getElementById('predatorScore').textContent = predatorScore;
-                                    handleScoreEvents();
-                                }
+                    if (particle.hasHoney && !isInsideGoldenCircle(particle)) {
+                        const distX = particle.x - this.x;
+                        const distY = particle.y - this.y;
+                        const distance = Math.sqrt(distX * distX + distY * distY);
+                        if (distance < this.size + particle.size) {
+                            const index = particlesArray.indexOf(particle);
+                            if (index > -1) {
+                                particlesArray.splice(index, 1);
+                                predatorScore++;
+                                document.getElementById('predatorScore').textContent = predatorScore;
+                                handleScoreEvents();
                             }
                         }
                     }
@@ -347,7 +353,6 @@
                 }
 
                 if (closestParticle && !isInsideGoldenCircle(closestParticle)) {
-                    // Daca particula cu miere nu e in cercul auriu, bondarul poate incerca sa o manance
                     const dx = closestParticle.x - this.x;
                     const dy = closestParticle.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -411,7 +416,8 @@
 
         draw() {
             if (this.hasHoney) {
-                ctx.drawImage(pollenImage, this.x - this.size, this.y - this.size, this.size * 5, this.size * 5);
+                // Mărim imaginea polenului un pic, ca să se vadă mai clar
+                ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size * 3, this.size * 3);
             } else {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
@@ -483,7 +489,8 @@
             giantWaspAdded = true;
         }
 
-        if (freezeEnergy >= 1000) {
+        if (freezeEnergy >= 1000 && role === "bees") {
+            // Freeze button apare doar daca joci cu bees
             document.getElementById('freezeButton').style.display = 'block';
         }
 
@@ -574,6 +581,12 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         init();
+
+        // Daca e wasps, ascundem butonul freeze permanent
+        if (role === "wasps") {
+            document.getElementById('freezeButton').style.display = 'none';
+        }
+
         if (isMobile && role === "wasps") {
             document.getElementById('joystickContainer').style.display = 'block';
         } else {
