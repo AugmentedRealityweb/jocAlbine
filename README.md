@@ -454,7 +454,7 @@
 
         draw() {
             if (this.hasHoney) {
-                ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size*3, this.size*3);
+                ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size*4, this.size*4);
             } else {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI*2, false);
