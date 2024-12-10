@@ -9,12 +9,15 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #53500d;
+            /* Background image */
+            background: url('https://img.freepik.com/premium-photo/background-honeycomb-is-made-honeycomb_947814-201763.jpg') no-repeat center center fixed;
+            background-size: cover;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
         }
+
         canvas {
             position: fixed;
             top: 0;
@@ -149,7 +152,6 @@
         mouse.y = event.clientY;
     });
 
-    // Pe mobil, actualizam mouse.x, mouse.y la touchmove, fara conditii
     window.addEventListener('touchmove', function (event) {
         if (event.touches && event.touches.length > 0) {
             mouse.x = event.touches[0].clientX;
@@ -171,13 +173,14 @@
     let freezeEnergy = 0;
     let gameOver = false;
 
+    // Culori pastelate moderne pentru particulele fara polen
     const particleColors = [
-        { name: 'Roșu', rgba: 'rgba(255, 0, 0, 0.5)' },
-        { name: 'Verde', rgba: 'rgba(0, 128, 0, 0.5)' },
-        { name: 'Albastru', rgba: 'rgba(0, 0, 255, 0.5)' },
-        { name: 'Portocaliu', rgba: 'rgba(255, 165, 0, 0.5)' },
-        { name: 'Mov', rgba: 'rgba(128, 0, 128, 0.5)' },
-        { name: 'Cyan', rgba: 'rgba(0, 255, 255, 0.5)' }
+        { name: 'Pastel Pink', rgba: 'rgba(224, 118, 37, 0.8)' },
+        { name: 'Pastel Orange', rgba: 'rgba(32, 98, 26, 0.8)' },
+        { name: 'Pastel Yellow', rgba: 'rgba(34, 38, 170, 0.78)' },
+        { name: 'Pastel Green', rgba: 'rgba(134, 2, 66, 0.78)' },
+        { name: 'Pastel Blue', rgba: 'rgba(121, 10, 0, 0.78)' },
+        { name: 'Pastel Purple', rgba: 'rgba(85, 17, 122, 0.94)' }
     ];
 
     const joystickPosition = { x: 0, y: 0 };
@@ -235,6 +238,13 @@
         }
     }
 
+    function isInsideGoldenCircle(particle) {
+        const dx = particle.x - goldenCircle.x;
+        const dy = particle.y - goldenCircle.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < goldenCircle.radius;
+    }
+
     class BlackParticle {
         constructor(x, y, size) {
             this.x = x;
@@ -248,7 +258,6 @@
         }
 
         draw() {
-            // Desenam imaginea bondarului
             ctx.drawImage(waspImage, this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
         }
 
@@ -284,16 +293,19 @@
 
                 particlesArray.forEach(particle => {
                     if (particle.hasHoney) {
-                        const distX = particle.x - this.x;
-                        const distY = particle.y - this.y;
-                        const distance = Math.sqrt(distX * distX + distY * distY);
-                        if (distance < this.size + particle.size) {
-                            const index = particlesArray.indexOf(particle);
-                            if (index > -1) {
-                                particlesArray.splice(index, 1);
-                                predatorScore++;
-                                document.getElementById('predatorScore').textContent = predatorScore;
-                                handleScoreEvents();
+                        // Bondarul nu mananca daca particula e in cercul auriu
+                        if (!isInsideGoldenCircle(particle)) {
+                            const distX = particle.x - this.x;
+                            const distY = particle.y - this.y;
+                            const distance = Math.sqrt(distX * distX + distY * distY);
+                            if (distance < this.size + particle.size) {
+                                const index = particlesArray.indexOf(particle);
+                                if (index > -1) {
+                                    particlesArray.splice(index, 1);
+                                    predatorScore++;
+                                    document.getElementById('predatorScore').textContent = predatorScore;
+                                    handleScoreEvents();
+                                }
                             }
                         }
                     }
@@ -334,7 +346,8 @@
                     }
                 }
 
-                if (closestParticle) {
+                if (closestParticle && !isInsideGoldenCircle(closestParticle)) {
+                    // Daca particula cu miere nu e in cercul auriu, bondarul poate incerca sa o manance
                     const dx = closestParticle.x - this.x;
                     const dy = closestParticle.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -354,6 +367,7 @@
                         this.vy = (dy / distance) * this.speed;
                     }
                 } else {
+                    // Nicio țintă sau ținta e in cerc auriu
                     this.vx = 0;
                     this.vy = 0;
                 }
@@ -464,7 +478,6 @@
     }
 
     function handleScoreEvents() {
-        // La 2000 puncte, adaugam bondarul mare o singura data
         if (!giantWaspAdded && (preyScore >= 2000 || predatorScore >= 2000)) {
             addGiantWasp();
             giantWaspAdded = true;
@@ -482,14 +495,12 @@
         const x = Math.random() * (canvas.width - size * 2) + size;
         const y = Math.random() * (canvas.height - size * 2) + size;
         const giantWasp = new BlackParticle(x, y, size);
-        // Giant Wasp de doua ori mai lent:
         giantWasp.speed = 0.75;
         blackParticles.push(giantWasp);
         document.getElementById('numPredators').textContent = blackParticles.length;
     }
 
     function checkGameOver() {
-        // Jocul se termina la 3000 de puncte, nu 4500
         if (preyScore >= 3000) {
             alert('Game Over! Bees Win!');
             gameOver = true;
@@ -563,7 +574,6 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         init();
-        // Afisam joystick-ul doar daca role=wasps si isMobile=true
         if (isMobile && role === "wasps") {
             document.getElementById('joystickContainer').style.display = 'block';
         } else {
@@ -580,7 +590,6 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Joystick logic (doar daca isMobile si role=wasps)
     let isDragging = false;
     const joystickContainer = document.getElementById('joystickContainer');
     const joystick = document.getElementById('joystick');
