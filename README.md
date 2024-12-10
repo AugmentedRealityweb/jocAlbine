@@ -1,10 +1,11 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Particle Simulation</title>
+    <title>Advanced Particle Simulation</title>
     <style>
-        body, html {
+        html, body {
             height: 100%;
             margin: 0;
             padding: 0;
@@ -14,7 +15,7 @@
             overflow: hidden;
         }
 
-        canvas {
+        #particleCanvas {
             position: fixed;
             top: 0;
             left: 0;
@@ -24,7 +25,7 @@
             z-index: 1;
         }
 
-        #menu {
+        .menu {
             position: fixed;
             top: 20%;
             left: 50%;
@@ -36,31 +37,8 @@
             z-index: 2;
             text-align: center;
         }
-        #menu h2 {
-            margin-top: 0;
-            font-size: 24px;
-            color: #333;
-        }
-        #menu label, #menu select {
-            font-size: 16px;
-            color: #333;
-        }
-        #menu button {
-            margin-top: 20px;
-            background: #fbc02d;
-            border: none;
-            border-radius: 10px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 16px;
-            color: #333;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        }
-        #menu button:hover {
-            background: #fdd835;
-        }
 
-        #hud {
+        .hud {
             position: fixed;
             top: 10px;
             left: 10px;
@@ -68,11 +46,11 @@
             padding: 10px;
             border-radius: 10px;
             font-size: 14px;
-            z-index: 1;
+            z-index: 10;
             box-shadow: 0 4px 16px rgba(0,0,0,0.1);
         }
 
-        #restartButton {
+        .restart-button {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -83,16 +61,13 @@
             border-radius: 10px;
             padding: 20px 40px;
             cursor: pointer;
-            z-index: 3;
-            display: none;
+            z-index: 15;
             font-size: 18px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-        }
-        #restartButton:hover {
-            background-color: #8d6e63;
+            display: none;
         }
 
-        #freezeButton {
+        .freeze-button {
             position: fixed;
             bottom: 10px;
             right: 10px;
@@ -102,14 +77,11 @@
             border-radius: 10px;
             padding: 10px;
             cursor: pointer;
-            z-index: 2;
+            z-index: 15;
             display: none;
         }
-        #freezeButton:hover {
-            background-color: #43a047;
-        }
 
-        #joystickContainer {
+        .joystick-container {
             position: fixed;
             bottom: 20px;
             left: 50%;
@@ -119,10 +91,10 @@
             background: rgba(0, 0, 0, 0.2);
             border-radius: 50%;
             touch-action: none;
-            z-index: 2;
+            z-index: 15;
         }
 
-        #joystick {
+        .joystick {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -133,109 +105,71 @@
             transform: translate(-50%, -50%);
         }
     </style>
+    <!-- p5.js pentru efecte vizuale -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@latest/lib/p5.min.js"></script>
+    <!-- Howler.js pentru sunet -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
 </head>
 <body>
+    <div id="menu" class="menu">
+        <h2>Particle Simulation Settings</h2>
+        <p>Alege rolul tău în joc:</p>
+        <label for="role">Select Role:</label>
+        <select id="role">
+            <option value="bees">Albine</option>
+            <option value="wasps">Bondari</option>
+        </select>
+        <br><br>
+        <label for="numParticles">Număr de albine:</label>
+        <select id="numParticles">
+            <option value="2000">2000</option>
+            <option value="5000">5000</option>
+        </select>
+        <br><br>
+        <label for="mode">Mod de joc:</label>
+        <select id="mode">
+            <option value="timeAttack">Time Attack</option>
+            <option value="survival">Survival</option>
+            <option value="strategie">Strategie</option>
+        </select>
+        <br><br>
+        <button id="startButton">Start Game</button>
+    </div>
 
-<div id="menu">
-    <h2>Particle Simulation Settings</h2>
-    <p>Alege rolul tău în joc:</p>
-    <label for="role">Select Role:</label>
-    <select id="role">
-        <option value="bees">Albine</option>
-        <option value="wasps">Bondari</option>
-    </select>
-    <br /><br />
-    <label for="numParticles">Număr de albine:</label>
-    <select id="numParticles">
-        <option value="2000">2000</option>
-        <option value="5000">5000</option>
-    </select>
-    <br /><br />
-    <label for="mode">Mod de joc:</label>
-    <select id="mode">
-        <option value="timeAttack">Time Attack</option>
-        <option value="survival">Survival</option>
-        <option value="strategie">Strategie</option>
-    </select>
-    <br /><br />
-    <button onclick="startGame()">Start Game</button>
-</div>
+    <div id="hud" class="hud" style="display:none">
+        <p>Scor Albine: <span id="preyScore">0</span></p>
+        <p>Scor Prădători: <span id="predatorScore">0</span></p>
+        <p>Număr Prădători: <span id="numPredators">3</span></p>
+        <div id="modeInfo"></div>
+    </div>
 
-<div id="hud" style="display:none">
-    <p>Scor Albine: <span id="preyScore">0</span></p>
-    <p>Scor Prădători: <span id="predatorScore">0</span></p>
-    <p>Număr Prădători: <span id="numPredators">3</span></p>
-    <div id="modeInfo"></div>
-</div>
+    <button id="restartButton" class="restart-button">Restart Game</button>
+    <button id="freezeButton" class="freeze-button">Freeze Predators</button>
 
-<button id="restartButton" onclick="restartGame()">Restart Game</button>
-<button id="freezeButton" onclick="freezeBlackParticles()">Freeze Predators</button>
+    <div id="joystickContainer" class="joystick-container" style="display:none">
+        <div id="joystick" class="joystick"></div>
+    </div>
 
-<div id="joystickContainer" style="display:none">
-    <div id="joystick"></div>
-</div>
+    <canvas id="particleCanvas"></canvas>
 
-<canvas id="particleCanvas"></canvas>
 
-<script>
-// Logica similară cu cea anterioară, cu ajustările cerute
+<script type="module">
 
-let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let mouse = { x: null, y: null };
-let role = "bees";
-let mode = "timeAttack";
-
-let giantWaspAdded = false;
-let gameOver = false;
-
-let timer = null;
-let timeLeft = 90; // Time Attack: 90 sec
-let waveCounter = 0; // Survival: creste la fiecare 60 de sec
-let resources = []; // Strategie
-
-let preyScore = 0;
-let predatorScore = 0;
-let freezeActive = false;
-let freezeEnergy = 0;
-
-window.addEventListener('mousemove', function (event) {
-    mouse.x = event.clientX;
-    mouse.y = event.clientY;
-});
-
-window.addEventListener('touchmove', function (event) {
-    if (event.touches && event.touches.length > 0) {
-        mouse.x = event.touches[0].clientX;
-        mouse.y = event.touches[0].clientY;
-    }
-});
-
-const canvas = document.getElementById('particleCanvas');
-const ctx = canvas.getContext('2d');
-
-let particlesArray = [];
-let blackParticles = [];
-let controlledBlackParticle;
-let goldenCircle;
-let hive;
-
+// Utilitare
 const particleColors = [
-    { name: 'Pastel Pink', rgba: 'rgba(224, 118, 37, 0.8)' },
-    { name: 'Pastel Orange', rgba: 'rgba(32, 98, 26, 0.8)' },
-    { name: 'Pastel Yellow', rgba: 'rgba(34, 38, 170, 0.78)' },
-    { name: 'Pastel Green', rgba: 'rgba(134, 2, 66, 0.78)' },
-    { name: 'Pastel Blue', rgba: 'rgba(121, 10, 0, 0.78)' },
-    { name: 'Pastel Purple', rgba: 'rgba(85, 17, 122, 0.94)' }
+    'rgba(224,118,37,0.8)',
+    'rgba(32,98,26,0.8)',
+    'rgba(34,38,170,0.78)',
+    'rgba(134,2,66,0.78)',
+    'rgba(121,10,0,0.78)',
+    'rgba(85,17,122,0.94)'
 ];
 
-const joystickPosition = { x: 0, y: 0 };
+function getRandomColor() {
+    return particleColors[Math.floor(Math.random()*particleColors.length)];
+}
 
-const pollenImage = new Image();
-pollenImage.src = 'https://clipart-library.com/images/5cRdXKbca.png';
-
-const waspImage = new Image();
-waspImage.src = 'https://www.pngall.com/wp-content/uploads/13/Wasp-Bee.png';
-
+// Clase Entități
 class Hive {
     constructor(x, y, size) {
         this.x = x;
@@ -243,16 +177,16 @@ class Hive {
         this.size = size;
     }
 
-    draw() {
+    draw(ctx) {
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
             const angle = (Math.PI / 3) * i;
-            const x = this.x + this.size * Math.cos(angle);
-            const y = this.y + this.size * Math.sin(angle);
+            const xx = this.x + this.size * Math.cos(angle);
+            const yy = this.y + this.size * Math.sin(angle);
             if (i === 0) {
-                ctx.moveTo(x, y);
+                ctx.moveTo(xx, yy);
             } else {
-                ctx.lineTo(x, y);
+                ctx.lineTo(xx, yy);
             }
         }
         ctx.closePath();
@@ -260,132 +194,256 @@ class Hive {
         ctx.fill();
     }
 
-    relocate() {
-        this.x = Math.random() * (canvas.width - this.size * 2) + this.size;
-        this.y = Math.random() * (canvas.height - this.size * 2) + this.size;
+    relocate(width,height) {
+        this.x = Math.random()*(width - this.size*2) + this.size;
+        this.y = Math.random()*(height - this.size*2) + this.size;
     }
 }
 
 class GoldenCircle {
-    constructor(x, y, radius) {
+    constructor(x,y,radius) {
         this.x = x;
         this.y = y;
         this.radius = radius;
     }
-
-    draw() {
-        const gradient = ctx.createRadialGradient(this.x, this.y, this.radius * 0.1, this.x, this.y, this.radius);
-        gradient.addColorStop(0, 'rgba(255, 255, 150, 1)');
-        gradient.addColorStop(1, 'rgba(255, 204, 0, 0.8)');
+    draw(ctx) {
+        const gradient = ctx.createRadialGradient(this.x, this.y, this.radius*0.1, this.x, this.y, this.radius);
+        gradient.addColorStop(0,'rgba(255,255,150,1)');
+        gradient.addColorStop(1,'rgba(255,204,0,0.8)');
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        ctx.strokeStyle = 'rgba(255, 204, 0, 0.5)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,204,0,0.5)';
+        ctx.lineWidth=2;
         ctx.stroke();
     }
 }
 
-function isInsideGoldenCircle(particle) {
-    const dx = particle.x - goldenCircle.x;
-    const dy = particle.y - goldenCircle.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < goldenCircle.radius;
+class Particle {
+    constructor(x,y,dx,dy,size,color) {
+        this.x = x;
+        this.y = y;
+        this.dx = dx;
+        this.dy = dy;
+        this.size = size;
+        this.color = color;
+        this.hasHoney = false;
+        this.fromResource = false;
+    }
+
+    static createRandom(width, height) {
+        const size = Math.random()*3+1;
+        const x = Math.random()*(width - size*2);
+        const y = Math.random()*(height - size*2);
+        const dx = (Math.random()-0.5)*2;
+        const dy = (Math.random()-0.5)*2;
+        const color = getRandomColor();
+        return new Particle(x,y,dx,dy,size,color);
+    }
+
+    static getPollenImage() {
+        if (!Particle._pollenImg) {
+            Particle._pollenImg = new Image();
+            Particle._pollenImg.src = 'https://clipart-library.com/images/5cRdXKbca.png';
+        }
+        return Particle._pollenImg;
+    }
+
+    draw(ctx) {
+        if (this.hasHoney) {
+            const pollenImage = Particle.getPollenImage();
+            ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size*4, this.size*4);
+        } else {
+            ctx.beginPath();
+            ctx.arc(this.x,this.y,this.size,0,Math.PI*2,false);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+    }
+
+    update(engine) {
+        const canvas = engine.canvas;
+        const ctx = engine.ctx;
+        if (!this.hasHoney) {
+            const distToGold = Math.sqrt((this.x - engine.goldenCircle.x)**2 + (this.y - engine.goldenCircle.y)**2);
+            if (distToGold < engine.goldenCircle.radius) {
+                this.hasHoney = true;
+                this.fromResource = false;
+            } else if (engine.mode==='strategie') {
+                // Check resources
+                for (let res of engine.resources) {
+                    const ddx = res.x - this.x;
+                    const ddy = res.y - this.y;
+                    const dist = Math.sqrt(ddx*ddx+ddy*ddy);
+                    if (dist < res.size) {
+                        this.hasHoney = true;
+                        this.fromResource = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            let speedFactor = this.fromResource ? 1.5 : 1;
+            if (engine.role==='bees') {
+                const {x:mx,y:my} = engine.inputManager.getMousePos();
+                const dx = mx - this.x;
+                const dy = my - this.y;
+                const distance = Math.sqrt(dx*dx+dy*dy);
+                if (distance>1) {
+                    this.x += (dx/distance)*2*speedFactor;
+                    this.y += (dy/distance)*2*speedFactor;
+                }
+            } else {
+                const dx = engine.hive.x - this.x;
+                const dy = engine.hive.y - this.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance>1) {
+                    this.x += (dx/distance)*1.5*speedFactor;
+                    this.y += (dy/distance)*1.5*speedFactor;
+                }
+            }
+
+            const distToHive = Math.sqrt((this.x - engine.hive.x)**2+(this.y - engine.hive.y)**2);
+            if (distToHive<engine.hive.size) {
+                this.hasHoney = false;
+                engine.incrementPreyScore();
+
+                if (engine.preyScore %100===0) engine.hive.relocate(engine.canvas.width,engine.canvas.height);
+            }
+        }
+
+        this.x += this.dx;
+        this.y += this.dy;
+
+        if (this.x+this.size>canvas.width || this.x - this.size <0) {
+            this.dx = -this.dx;
+        }
+        if (this.y+this.size>canvas.height || this.y - this.size <0) {
+            this.dy = -this.dy;
+        }
+
+        this.draw(ctx);
+    }
 }
 
 class BlackParticle {
-    constructor(x, y, size) {
+    constructor(x,y,size,controlled=false) {
         this.x = x;
         this.y = y;
         this.size = size;
         this.speed = 2;
         this.frozen = false;
-        this.controlled = false;
+        this.controlled = controlled;
         this.vx = 0;
         this.vy = 0;
         this.roamTarget = null;
     }
 
-    draw() {
-        ctx.drawImage(waspImage, this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+    static getWaspImage() {
+        if (!BlackParticle._waspImg) {
+            BlackParticle._waspImg = new Image();
+            BlackParticle._waspImg.src = 'https://www.pngall.com/wp-content/uploads/13/Wasp-Bee.png';
+        }
+        return BlackParticle._waspImg;
+    }
+
+    static createRandom(width,height,controlled=false) {
+        const size = 10;
+        const x = Math.random()*(width - size*2) + size;
+        const y = Math.random()*(height - size*2) + size;
+        return new BlackParticle(x,y,size,controlled);
+    }
+
+    static createGiant(width,height) {
+        const size = 20;
+        const x = Math.random()*(width - size*2)+size;
+        const y = Math.random()*(height - size*2)+size;
+        const giant = new BlackParticle(x,y,size,false);
+        giant.speed = 0.75;
+        return giant;
+    }
+
+    draw(ctx,role) {
+        const waspImage = BlackParticle.getWaspImage();
+        ctx.drawImage(waspImage, this.x - this.size, this.y - this.size, this.size*2, this.size*2);
 
         if (this.controlled && role === "wasps") {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size*2, 0, Math.PI*2);
-            ctx.strokeStyle = 'rgba(255,215,0,0.3)'; 
-            ctx.lineWidth = 3;
+            ctx.arc(this.x, this.y, this.size*2,0,Math.PI*2);
+            ctx.strokeStyle='rgba(255,215,0,0.3)';
+            ctx.lineWidth=3;
             ctx.stroke();
         }
     }
 
-    pickRoamTarget() {
+    pickRoamTarget(width,height) {
         this.roamTarget = {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height
+            x: Math.random()*width,
+            y: Math.random()*height
         };
     }
 
-    update() {
-        if (this.frozen || gameOver) return;
+    update(engine) {
+        if (this.frozen || engine.gameOver) return;
+
+        const canvas = engine.canvas;
+        const role = engine.role;
+        const isMobile = engine.inputManager.isMobile();
+        const mouse = engine.inputManager.getMousePos();
 
         if (this.controlled) {
             if (isMobile && role === "wasps") {
-                const dx = joystickPosition.x;
-                const dy = joystickPosition.y;
-                if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                    this.vx = dx * this.speed * 1.5;
-                    this.vy = dy * this.speed * 1.5;
+                const dx = engine.inputManager.joystickPosition.x;
+                const dy = engine.inputManager.joystickPosition.y;
+                if (Math.abs(dx)>0.1 || Math.abs(dy)>0.1) {
+                    this.vx = dx*this.speed*1.5;
+                    this.vy = dy*this.speed*1.5;
                 } else {
-                    this.vx = 0;
-                    this.vy = 0;
+                    this.vx=0; this.vy=0;
                 }
             } else {
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance > 1) {
+                if (distance>1) {
                     this.vx = (dx/distance)*this.speed;
                     this.vy = (dy/distance)*this.speed;
                 } else {
-                    this.vx = 0;
-                    this.vy = 0;
+                    this.vx=0;this.vy=0;
                 }
             }
 
-            this.x += this.vx;
-            this.y += this.vy;
+            this.x+=this.vx;
+            this.y+=this.vy;
 
-            particlesArray.forEach(particle => {
-                if (particle.hasHoney && !isInsideGoldenCircle(particle)) {
-                    const distX = particle.x - this.x;
-                    const distY = particle.y - this.y;
-                    const distance = Math.sqrt(distX*distX + distY*distY);
-                    if (distance < this.size + particle.size) {
-                        const index = particlesArray.indexOf(particle);
-                        if (index > -1) {
-                            particlesArray.splice(index, 1);
-                            predatorScore++;
-                            document.getElementById('predatorScore').textContent = predatorScore;
-                            handleScoreEvents();
-                        }
+            // coliziune cu particule ce au honey
+            engine.particlesArray.forEach(p=>{
+                if (p.hasHoney && !engine.isInsideGoldenCircle(p)) {
+                    const distX = p.x - this.x;
+                    const distY = p.y - this.y;
+                    const distance = Math.sqrt(distX*distX+distY*distY);
+                    if (distance < this.size + p.size) {
+                        engine.removeParticle(p);
+                        engine.incrementPredatorScore();
                     }
                 }
             });
 
         } else {
+            // cauta particula cea mai apropiata cu honey
             let closestParticle = null;
             let minDistance = Infinity;
 
-            for (let particle of particlesArray) {
-                if (particle.hasHoney && !isInsideGoldenCircle(particle)) {
+            for (let particle of engine.particlesArray) {
+                if (particle.hasHoney && !engine.isInsideGoldenCircle(particle)) {
                     const dx = particle.x - this.x;
                     const dy = particle.y - this.y;
                     const distance = Math.sqrt(dx*dx + dy*dy);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestParticle = particle;
+                    if (distance<minDistance) {
+                        minDistance=distance;
+                        closestParticle=particle;
                     }
                 }
             }
@@ -397,416 +455,524 @@ class BlackParticle {
                 const distance = Math.sqrt(dx*dx + dy*dy);
 
                 if (distance < this.size) {
-                    const index = particlesArray.indexOf(closestParticle);
-                    if (index > -1) {
-                        particlesArray.splice(index, 1);
-                        predatorScore++;
-                        document.getElementById('predatorScore').textContent = predatorScore;
-                        handleScoreEvents();
-                    }
-                    this.vx = 0;
-                    this.vy = 0;
+                    engine.removeParticle(closestParticle);
+                    engine.incrementPredatorScore();
+                    this.vx=0;this.vy=0;
                 } else {
-                    this.vx = (dx/distance)*this.speed;
-                    this.vy = (dy/distance)*this.speed;
+                    this.vx=(dx/distance)*this.speed;
+                    this.vy=(dy/distance)*this.speed;
                 }
-                this.x += this.vx;
-                this.y += this.vy;
+                this.x+=this.vx;this.y+=this.vy;
             } else {
-                // Nicio tinta -> roam
-                if (!this.roamTarget) {
-                    this.pickRoamTarget();
-                }
+                if (!this.roamTarget) this.pickRoamTarget(canvas.width, canvas.height);
                 const dx = this.roamTarget.x - this.x;
                 const dy = this.roamTarget.y - this.y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance < 20) {
-                    this.pickRoamTarget();
+                if (distance<20) {
+                    this.pickRoamTarget(canvas.width, canvas.height);
                 } else {
-                    this.vx = (dx/distance)*this.speed*0.5; 
-                    this.vy = (dy/distance)*this.speed*0.5;
+                    this.vx=(dx/distance)*this.speed*0.5;
+                    this.vy=(dy/distance)*this.speed*0.5;
                 }
-                this.x += this.vx;
-                this.y += this.vy;
+                this.x+=this.vx;this.y+=this.vy;
             }
         }
 
         // Bounce la margini
-        if (this.x + this.size > canvas.width) {
-            this.x = canvas.width - this.size;
-            this.vx = -this.vx;
-        } else if (this.x - this.size < 0) {
-            this.x = this.size;
-            this.vx = -this.vx;
+        if (this.x+this.size>canvas.width) {
+            this.x=canvas.width-this.size;
+            this.vx=-this.vx;
+        } else if (this.x-this.size<0) {
+            this.x=this.size;
+            this.vx=-this.vx;
+        }
+        if (this.y+this.size>canvas.height) {
+            this.y=canvas.height-this.size;
+            this.vy=-this.vy;
+        } else if (this.y-this.size<0) {
+            this.y=this.size;
+            this.vy=-this.vy;
         }
 
-        if (this.y + this.size > canvas.height) {
-            this.y = canvas.height - this.size;
-            this.vy = -this.vy;
-        } else if (this.y - this.size < 0) {
-            this.y = this.size;
-            this.vy = -this.vy;
-        }
-
-        this.draw();
+        this.draw(engine.ctx,role);
     }
 }
 
-class Particle {
-    constructor(x, y, directionX, directionY, size, color) {
-        this.x = x;
-        this.y = y;
-        this.directionX = directionX;
-        this.directionY = directionY;
-        this.size = size;
-        this.color = color;
-        this.originalColor = color.rgba;
-        this.hasHoney = false;
-        this.fromResource = false; // pentru strategie: daca a luat polen din resource point
+// Input Manager
+class InputManager {
+    constructor(canvas, joystickContainer, joystick) {
+        this.canvas = canvas;
+        this.joystickContainer = joystickContainer;
+        this.joystick = joystick;
+        this.mouse = {x:null,y:null};
+        this.joystickPosition = {x:0,y:0};
+
+        this.isDragging=false;
+
+        window.addEventListener('mousemove',(e)=>{
+            this.mouse.x=e.clientX;
+            this.mouse.y=e.clientY;
+        });
+
+        window.addEventListener('touchmove',(e)=>{
+            if (e.touches && e.touches.length>0) {
+                this.mouse.x=e.touches[0].clientX;
+                this.mouse.y=e.touches[0].clientY;
+            }
+        });
+
+        if (this.isMobile()) {
+            this.joystickContainer.addEventListener('touchstart',(ev)=>this.handleTouchStart(ev),{passive:true});
+            this.joystickContainer.addEventListener('touchmove',(ev)=>this.handleTouchMove(ev),{passive:false});
+            this.joystickContainer.addEventListener('touchend',()=>this.handleTouchEnd(),{passive:true});
+        }
     }
 
-    draw() {
-        if (this.hasHoney) {
-            ctx.drawImage(pollenImage, this.x - this.size*1.5, this.y - this.size*1.5, this.size*4, this.size*4);
+    getMousePos() {
+        if (!this.mouse.x) {
+            return {x: this.canvas.width/2,y:this.canvas.height/2};
+        }
+        return this.mouse;
+    }
+
+    isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    handleTouchStart(e) {
+        this.isDragging = true;
+        this.handleTouchMove(e);
+    }
+
+    handleTouchMove(e) {
+        if (!this.isDragging) return;
+        const rect = this.joystickContainer.getBoundingClientRect();
+        const touch = e.touches[0];
+        const dx = touch.clientX - rect.left - rect.width/2;
+        const dy = touch.clientY - rect.top - rect.height/2;
+        const distance = Math.sqrt(dx*dx+dy*dy);
+        const maxDistance = rect.width/2;
+
+        if (distance<maxDistance) {
+            this.joystick.style.transform=`translate(${dx}px,${dy}px)`;
+            this.joystickPosition.x = dx/maxDistance;
+            this.joystickPosition.y = dy/maxDistance;
         } else {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI*2, false);
-            ctx.fillStyle = this.originalColor;
-            ctx.fill();
+            const angle = Math.atan2(dy,dx);
+            const limitedX = Math.cos(angle)*maxDistance;
+            const limitedY = Math.sin(angle)*maxDistance;
+            this.joystick.style.transform=`translate(${limitedX}px,${limitedY}px)`;
+            this.joystickPosition.x=limitedX/maxDistance;
+            this.joystickPosition.y=limitedY/maxDistance;
         }
     }
 
-    update() {
-        if (!this.hasHoney) {
-            const dx = goldenCircle.x - this.x;
-            const dy = goldenCircle.y - this.y;
-            const distance = Math.sqrt(dx*dx + dy*dy);
-
-            if (distance < goldenCircle.radius) {
-                this.hasHoney = true;
-                this.fromResource = false;
-            } else if (mode==='strategie') {
-                // Check resource points
-                for (let res of resources) {
-                    const ddx = res.x - this.x;
-                    const ddy = res.y - this.y;
-                    const dist = Math.sqrt(ddx*ddx + ddy*ddy);
-                    if (dist < res.size) {
-                        // Ia polen instant
-                        this.hasHoney = true;
-                        this.fromResource = true;
-                        break;
-                    }
-                }
-            }
-        } else {
-            let speedFactor = 1;
-            if (this.fromResource) speedFactor = 1.5; // Mai rapid daca a luat polen din resource
-
-            if (role === "bees") {
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-                const distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance > 1) {
-                    this.x += (dx/distance)*2*speedFactor;
-                    this.y += (dy/distance)*2*speedFactor;
-                }
-            } else {
-                const dx = hive.x - this.x;
-                const dy = hive.y - this.y;
-                const distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance > 1) {
-                    this.x += (dx/distance)*1.5*speedFactor;
-                    this.y += (dy/distance)*1.5*speedFactor;
-                }
-            }
-
-            const distToHive = Math.sqrt((this.x - hive.x)**2 + (this.y - hive.y)**2);
-            if (distToHive < hive.size) {
-                this.hasHoney = false;
-                preyScore++;
-                document.getElementById('preyScore').textContent = preyScore;
-                freezeEnergy += 10;
-
-                if (preyScore % 100 === 0) {
-                    hive.relocate();
-                }
-
-                handleScoreEvents();
-            }
-        }
-
-        this.x += this.directionX;
-        this.y += this.directionY;
-
-        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
-            this.directionX = -this.directionX;
-        }
-        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
-            this.directionY = -this.directionY;
-        }
-
-        this.draw();
+    handleTouchEnd() {
+        this.isDragging=false;
+        this.joystick.style.transform="translate(-50%,-50%)";
+        this.joystickPosition.x=0;
+        this.joystickPosition.y=0;
     }
 }
 
-function handleScoreEvents() {
-    if (!giantWaspAdded && (preyScore >= 2000 || predatorScore >= 2000)) {
-        addGiantWasp();
-        giantWaspAdded = true;
-    }
-
-    // Daca e bees si freezeEnergy >=10000, apar butonul freeze
-    if (freezeEnergy >= 10000 && role === "bees") {
-        document.getElementById('freezeButton').style.display = 'block';
-    }
-
-    checkGameOver();
-}
-
-function addGiantWasp() {
-    const size = 20;
-    const x = Math.random() * (canvas.width - size * 2) + size;
-    const y = Math.random() * (canvas.height - size * 2) + size;
-    const giantWasp = new BlackParticle(x, y, size);
-    giantWasp.speed = 0.75;
-    blackParticles.push(giantWasp);
-    document.getElementById('numPredators').textContent = blackParticles.length;
-}
-
-function checkGameOver() {
-    if (mode === 'timeAttack') {
-        if (timeLeft <= 0) {
-            alert('Time Attack Over! Scor: ' + preyScore);
-            gameOver = true;
-            document.getElementById('restartButton').style.display = 'block';
-        }
-    }
-
-    if (preyScore >= 3000) {
-        alert('Game Over! Bees Win!');
-        gameOver = true;
-        document.getElementById('restartButton').style.display = 'block';
-    } else if (predatorScore >= 3000) {
-        alert('Game Over! Predators Win!');
-        gameOver = true;
-        document.getElementById('restartButton').style.display = 'block';
-    }
-}
-
-function freezeBlackParticles() {
-    if (freezeActive || freezeEnergy < 10000) return;
-
-    freezeActive = true;
-    freezeEnergy = 0;
-    document.getElementById('freezeButton').style.display = 'none';
-
-    blackParticles.forEach(particle => particle.frozen = true);
-    setTimeout(() => {
-        blackParticles.forEach(particle => particle.frozen = false);
-        freezeActive = false;
-    }, 5000);
-}
-
-function spawnWave() {
-    // Pentru survival: la fiecare val, adaugam 2 bondari
-    for (let i=0;i<2;i++){
-        const size = 10;
-        const x = Math.random() * (canvas.width - size * 2) + size;
-        const y = Math.random() * (canvas.height - size * 2) + size;
-        const bp = new BlackParticle(x,y,size);
-        // Crestere viteza odata cu valurile
-        bp.speed = 2 + waveCounter*0.2;
-        blackParticles.push(bp);
-        document.getElementById('numPredators').textContent = blackParticles.length;
-    }
-}
-
-function init() {
-    particlesArray = [];
-    blackParticles = [];
-    giantWaspAdded = false;
-
-    const numParticles = parseInt(document.getElementById('numParticles').value) || 2000;
-    for (let i = 0; i < numParticles; i++) {
-        const size = Math.random() * 3 + 1;
-        const x = Math.random() * (canvas.width - size * 2);
-        const y = Math.random() * (canvas.height - size * 2);
-        const directionX = (Math.random() - 0.5) * 2;
-        const directionY = (Math.random() - 0.5) * 2;
-        const color = particleColors[Math.floor(Math.random() * particleColors.length)];
-        particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
-    }
-
-    for (let i = 0; i < 3; i++) {
-        const size = 10;
-        const x = Math.random() * (canvas.width - size * 2) + size;
-        const y = Math.random() * (canvas.height - size * 2) + size;
-        const blackParticle = new BlackParticle(x, y, size);
-        if (role === "wasps" && i === 0) {
-            blackParticle.controlled = true;
-            controlledBlackParticle = blackParticle;
-        }
-        blackParticles.push(blackParticle);
-    }
-
-    goldenCircle = new GoldenCircle(canvas.width / 2, canvas.height / 2, 100);
-    hive = new Hive(canvas.width / 2, canvas.height / 2 + 200, 40);
-
-    if (mode==='strategie') {
-        // 5 puncte de resurse
-        for (let i=0;i<5;i++){
-            const rx = Math.random()*canvas.width;
-            const ry = Math.random()*canvas.height;
-            resources.push({x:rx,y:ry,size:20});
-        }
-    }
-}
-
-let timeInterval = null;
-let waveInterval = null;
-
-function animate() {
-    if (gameOver) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    goldenCircle.draw();
-    hive.draw();
-
-    if (mode==='strategie') {
-        // Desenam resource point-urile
-        ctx.fillStyle='green';
-        resources.forEach(res=>{
-            ctx.beginPath();
-            ctx.arc(res.x,res.y,res.size,0,Math.PI*2);
-            ctx.fill();
+// Audio Manager
+class AudioManager {
+    constructor() {
+        // Poți pune un URL real către un mp3 dacă ai
+        this.bgMusic = new Howl({
+            src: ['https://www.bensound.com/bensound-music/bensound-cute.mp3'], // muzică gratuită sample
+            loop: true,
+            volume: 0.3
         });
     }
 
-    blackParticles.forEach(blackParticle => blackParticle.update());
-    particlesArray.forEach(particle => particle.update());
-    requestAnimationFrame(animate);
+    playBackgroundMusic() {
+        this.bgMusic.play();
+    }
+
+    stopBackgroundMusic() {
+        this.bgMusic.stop();
+    }
 }
 
-function startGame() {
-    role = document.getElementById('role').value;
-    mode = document.getElementById('mode').value;
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('hud').style.display = 'block';
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    init();
+// Mode Base Class
+class BaseMode {
+    constructor(engine) {
+        this.engine = engine;
+    }
+    start() {}
+    checkGameOver(){}
+}
 
-    if (role === "wasps") {
-        document.getElementById('freezeButton').style.display = 'none';
+// TimeAttack Mode
+class TimeAttackMode extends BaseMode {
+    constructor(engine) {
+        super(engine);
+        this.timeLeft=90;
+        this.timer=null;
     }
 
-    if (isMobile && role === "wasps") {
-        document.getElementById('joystickContainer').style.display = 'block';
-    } else {
-        document.getElementById('joystickContainer').style.display = 'none';
-    }
-
-    if (mode === 'timeAttack') {
-        timeLeft = 90;
-        document.getElementById('modeInfo').innerHTML = 'Mode: Time Attack - Time left: '+timeLeft+'s';
-        timer = setInterval(()=>{
-            if (!gameOver) {
-                timeLeft--;
-                document.getElementById('modeInfo').innerHTML = 'Mode: Time Attack - Time left: '+timeLeft+'s';
-                if (timeLeft===60 || timeLeft===30) {
-                    // cresc dificultatea - adaug un bondar
-                    const size = 10;
-                    const x = Math.random()*canvas.width;
-                    const y = Math.random()*canvas.height;
-                    const bp = new BlackParticle(x,y,size);
-                    blackParticles.push(bp);
-                    document.getElementById('numPredators').textContent=blackParticles.length;
+    start() {
+        const modeInfo = document.getElementById('modeInfo');
+        modeInfo.textContent=`Mode: Time Attack - Time left: ${this.timeLeft}s`;
+        this.timer = setInterval(()=>{
+            if (!this.engine.gameOver) {
+                this.timeLeft--;
+                modeInfo.textContent=`Mode: Time Attack - Time left: ${this.timeLeft}s`;
+                if (this.timeLeft===60 || this.timeLeft===30) {
+                    const bp = BlackParticle.createRandom(this.engine.canvas.width,this.engine.canvas.height);
+                    this.engine.blackParticles.push(bp);
+                    document.getElementById('numPredators').textContent=this.engine.blackParticles.length;
                 }
-                if (timeLeft <=0) {
-                    checkGameOver();
-                    clearInterval(timer);
+                if (this.timeLeft<=0) {
+                    this.checkGameOver();
+                    clearInterval(this.timer);
                 }
             } else {
-                clearInterval(timer);
+                clearInterval(this.timer);
             }
         },1000);
-    } else if (mode==='survival') {
-        document.getElementById('modeInfo').innerHTML = 'Mode: Survival - Supravietuieste cat mai mult!';
-        waveInterval = setInterval(()=>{
-            if (!gameOver) {
-                waveCounter++;
-                spawnWave();
+    }
+
+    checkGameOver() {
+        if (this.timeLeft<=0) {
+            this.engine.gameOverFunction('Time Attack Over! Scor: '+this.engine.preyScore);
+        }
+        if (this.engine.preyScore>=3000) {
+            this.engine.gameOverFunction('Game Over! Bees Win!');
+        } else if (this.engine.predatorScore>=3000) {
+            this.engine.gameOverFunction('Game Over! Predators Win!');
+        }
+    }
+}
+
+// Survival Mode
+class SurvivalMode extends BaseMode {
+    constructor(engine) {
+        super(engine);
+        this.waveCounter=0;
+        this.waveInterval=null;
+    }
+
+    start() {
+        const modeInfo = document.getElementById('modeInfo');
+        modeInfo.textContent='Mode: Survival - Supravietuieste cat mai mult!';
+        this.waveInterval = setInterval(()=>{
+            if (!this.engine.gameOver) {
+                this.waveCounter++;
+                this.spawnWave();
             } else {
-                clearInterval(waveInterval);
+                clearInterval(this.waveInterval);
             }
         },60000);
-    } else if (mode==='strategie') {
-        document.getElementById('modeInfo').innerHTML = 'Mode: Strategie - Puncte de resurse pe harta! Albinele iau polen instant si devin mai rapide.';
     }
 
-    animate();
+    spawnWave() {
+        for (let i=0;i<2;i++){
+            const bp = BlackParticle.createRandom(this.engine.canvas.width,this.engine.canvas.height);
+            bp.speed = 2 + this.waveCounter*0.2;
+            this.engine.blackParticles.push(bp);
+            document.getElementById('numPredators').textContent=this.engine.blackParticles.length;
+        }
+    }
+
+    checkGameOver() {
+        // Survival: fără limită de timp, doar scor
+        if (this.engine.preyScore>=3000) {
+            this.engine.gameOverFunction('Game Over! Bees Win!');
+        } else if (this.engine.predatorScore>=3000) {
+            this.engine.gameOverFunction('Game Over! Predators Win!');
+        }
+    }
 }
 
-window.addEventListener('resize', function() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+// Strategie Mode
+class StrategieMode extends BaseMode {
+    constructor(engine) {
+        super(engine);
+    }
+
+    start() {
+        const modeInfo = document.getElementById('modeInfo');
+        modeInfo.textContent='Mode: Strategie - Resurse pe harta! Albinele iau polen instant si devin mai rapide.';
+    }
+
+    checkGameOver() {
+        if (this.engine.preyScore>=3000) {
+            this.engine.gameOverFunction('Game Over! Bees Win!');
+        } else if (this.engine.predatorScore>=3000) {
+            this.engine.gameOverFunction('Game Over! Predators Win!');
+        }
+    }
+}
+
+// GameEngine
+class GameEngine {
+    constructor(config) {
+        this.config=config;
+        this.canvas=document.getElementById(config.canvasId);
+        this.ctx=this.canvas.getContext('2d');
+
+        this.hud=document.getElementById(config.hudId);
+        this.menu=document.getElementById(config.menuId);
+        this.freezeButton=document.getElementById(config.freezeButtonId);
+        this.restartButton=document.getElementById(config.restartButtonId);
+        this.joystickContainer=document.getElementById(config.joystickContainerId);
+
+        this.gameOver=false;
+        this.role='bees';
+        this.mode='timeAttack';
+        this.numParticles=2000;
+
+        this.particlesArray=[];
+        this.blackParticles=[];
+        this.resources=[];
+
+        this.preyScore=0;
+        this.predatorScore=0;
+        this.freezeEnergy=0;
+
+        this.giantWaspAdded=false;
+
+        this.inputManager=new InputManager(this.canvas,this.joystickContainer,document.getElementById(this.config.joystickId));
+        this.audioManager=new AudioManager();
+
+        this.currentModeHandler=null;
+
+        window.addEventListener('resize',()=>this.onResize());
+        this.onResize();
+
+        this.initP5Overlay();
+    }
+
+    initP5Overlay() {
+        new p5((sk)=>{
+            let lines=[];
+            sk.setup=()=>{
+                sk.createCanvas(sk.windowWidth,sk.windowHeight).id('p5Canvas');
+                sk.noStroke();
+                for (let i=0;i<50;i++){
+                    lines.push({
+                        x:sk.random(sk.width),
+                        y:sk.random(sk.height),
+                        angle:sk.random(sk.TWO_PI),
+                        speed:sk.random(0.2,0.5),
+                        col:sk.color(255,255,255,30)
+                    });
+                }
+            };
+            sk.draw=()=>{
+                sk.clear();
+                lines.forEach(l=>{
+                    sk.fill(l.col);
+                    sk.ellipse(l.x,l.y,3,3);
+                    l.x+=Math.cos(l.angle)*l.speed;
+                    l.y+=Math.sin(l.angle)*l.speed;
+                    if (l.x<0) l.x=sk.width; if(l.x>sk.width)l.x=0;
+                    if (l.y<0) l.y=sk.height;if(l.y>sk.height)l.y=0;
+                });
+            };
+            sk.windowResized=()=>{
+                sk.resizeCanvas(sk.windowWidth,sk.windowHeight);
+            };
+        });
+    }
+
+    startGame({role,mode,numParticles}) {
+        this.role=role;
+        this.mode=mode;
+        this.numParticles=numParticles;
+
+        this.menu.style.display='none';
+        this.hud.style.display='block';
+
+        this.initEntities();
+
+        // inițializare mod
+        if (mode==='timeAttack') {
+            this.currentModeHandler=new TimeAttackMode(this);
+        } else if (mode==='survival') {
+            this.currentModeHandler=new SurvivalMode(this);
+        } else if (mode==='strategie') {
+            this.currentModeHandler=new StrategieMode(this);
+        }
+
+        this.currentModeHandler.start();
+
+        this.animate();
+        this.audioManager.playBackgroundMusic();
+    }
+
+    initEntities() {
+        this.particlesArray=[];
+        this.blackParticles=[];
+        this.resources=[];
+        this.preyScore=0;
+        this.predatorScore=0;
+        this.freezeEnergy=0;
+        this.gameOver=false;
+        this.giantWaspAdded=false;
+
+        for (let i=0;i<this.numParticles;i++){
+            this.particlesArray.push(Particle.createRandom(this.canvas.width,this.canvas.height));
+        }
+
+        for (let i=0;i<3;i++){
+            const bp=BlackParticle.createRandom(this.canvas.width,this.canvas.height,this.role==='wasps' && i===0);
+            this.blackParticles.push(bp);
+        }
+
+        this.goldenCircle=new GoldenCircle(this.canvas.width/2,this.canvas.height/2,100);
+        this.hive=new Hive(this.canvas.width/2,this.canvas.height/2+200,40);
+
+        if (this.mode==='strategie') {
+            for (let i=0;i<5;i++){
+                this.resources.push({
+                    x:Math.random()*this.canvas.width,
+                    y:Math.random()*this.canvas.height,
+                    size:20
+                });
+            }
+        }
+    }
+
+    onResize() {
+        this.canvas.width=window.innerWidth;
+        this.canvas.height=window.innerHeight;
+    }
+
+    animate() {
+        if (this.gameOver) return;
+        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+        this.goldenCircle.draw(this.ctx);
+        this.hive.draw(this.ctx);
+
+        if (this.mode==='strategie') {
+            this.ctx.fillStyle='green';
+            this.resources.forEach(res=>{
+                this.ctx.beginPath();
+                this.ctx.arc(res.x,res.y,res.size,0,Math.PI*2);
+                this.ctx.fill();
+            });
+        }
+
+        this.blackParticles.forEach(bp=>bp.update(this));
+        this.particlesArray.forEach(p=>p.update(this));
+
+        requestAnimationFrame(()=>this.animate());
+    }
+
+    incrementPreyScore() {
+        this.preyScore++;
+        document.getElementById('preyScore').textContent=this.preyScore;
+        this.freezeEnergy+=10;
+        this.checkEvents();
+    }
+
+    incrementPredatorScore() {
+        this.predatorScore++;
+        document.getElementById('predatorScore').textContent=this.predatorScore;
+        this.checkEvents();
+    }
+
+    checkEvents() {
+        if (!this.giantWaspAdded && (this.preyScore>=2000 || this.predatorScore>=2000)) {
+            this.addGiantWasp();
+            this.giantWaspAdded=true;
+        }
+
+        if (this.freezeEnergy>=10000 && this.role==='bees') {
+            this.freezeButton.style.display='block';
+        }
+
+        this.currentModeHandler.checkGameOver();
+    }
+
+    addGiantWasp() {
+        const giant=BlackParticle.createGiant(this.canvas.width,this.canvas.height);
+        this.blackParticles.push(giant);
+        document.getElementById('numPredators').textContent=this.blackParticles.length;
+    }
+
+    gameOverFunction(message) {
+        alert(message);
+        this.gameOver=true;
+        this.restartButton.style.display='block';
+        this.audioManager.stopBackgroundMusic();
+    }
+
+    freezeBlackParticles() {
+        if (this.freezeActive || this.freezeEnergy<10000) return;
+        this.freezeActive=true;
+        this.freezeEnergy=0;
+        this.freezeButton.style.display='none';
+
+        this.blackParticles.forEach(b=>b.frozen=true);
+        setTimeout(()=>{
+            this.blackParticles.forEach(b=>b.frozen=false);
+            this.freezeActive=false;
+        },5000);
+    }
+
+    restartGame() {
+        location.reload();
+    }
+
+    isInsideGoldenCircle(p) {
+        const dx=p.x - this.goldenCircle.x;
+        const dy=p.y - this.goldenCircle.y;
+        const distance=Math.sqrt(dx*dx+dy*dy);
+        return distance<this.goldenCircle.radius;
+    }
+
+    removeParticle(p) {
+        const idx=this.particlesArray.indexOf(p);
+        if (idx>-1) this.particlesArray.splice(idx,1);
+    }
+
+    removeBlackParticle(bp) {
+        const idx=this.blackParticles.indexOf(bp);
+        if (idx>-1) this.blackParticles.splice(idx,1);
+    }
+}
+
+// MAIN
+document.addEventListener('DOMContentLoaded',()=>{
+    const startButton=document.getElementById('startButton');
+    const restartButton=document.getElementById('restartButton');
+    const freezeButton=document.getElementById('freezeButton');
+
+    const roleSelect=document.getElementById('role');
+    const numParticlesSelect=document.getElementById('numParticles');
+    const modeSelect=document.getElementById('mode');
+
+    const game=new GameEngine({
+        canvasId:'particleCanvas',
+        hudId:'hud',
+        menuId:'menu',
+        joystickContainerId:'joystickContainer',
+        joystickId:'joystick',
+        freezeButtonId:'freezeButton',
+        restartButtonId:'restartButton'
+    });
+
+    startButton.addEventListener('click',()=>{
+        const role=roleSelect.value;
+        const mode=modeSelect.value;
+        const numParticles=parseInt(numParticlesSelect.value,10)||2000;
+
+        game.startGame({role,mode,numParticles});
+    });
+
+    restartButton.addEventListener('click',()=>{
+        game.restartGame();
+    });
+
+    freezeButton.addEventListener('click',()=>{
+        game.freezeBlackParticles();
+    });
 });
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-let isDragging = false;
-const joystickContainer = document.getElementById('joystickContainer');
-const joystick = document.getElementById('joystick');
-
-if (isMobile) {
-    joystickContainer.addEventListener('touchstart', handleTouchStart, {passive:true});
-    joystickContainer.addEventListener('touchmove', handleTouchMove, {passive:false});
-    joystickContainer.addEventListener('touchend', handleTouchEnd, {passive:true});
-}
-
-function handleTouchStart(event) {
-    isDragging = true;
-    handleTouchMove(event);
-}
-
-function handleTouchMove(event) {
-    if (!isDragging) return;
-
-    const rect = joystickContainer.getBoundingClientRect();
-    const touch = event.touches[0];
-    const dx = touch.clientX - rect.left - rect.width / 2;
-    const dy = touch.clientY - rect.top - rect.height / 2;
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    const maxDistance = rect.width / 2;
-
-    if (distance < maxDistance) {
-        joystick.style.transform = `translate(${dx}px, ${dy}px)`;
-        joystickPosition.x = dx / maxDistance;
-        joystickPosition.y = dy / maxDistance;
-    } else {
-        const angle = Math.atan2(dy, dx);
-        const limitedX = Math.cos(angle)*maxDistance;
-        const limitedY = Math.sin(angle)*maxDistance;
-        joystick.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
-        joystickPosition.x = limitedX/maxDistance;
-        joystickPosition.y = limitedY/maxDistance;
-    }
-}
-
-function handleTouchEnd() {
-    isDragging = false;
-    joystick.style.transform = "translate(-50%, -50%)";
-    joystickPosition.x = 0;
-    joystickPosition.y = 0;
-}
-
-function restartGame() {
-    location.reload();
-}
-
 </script>
-
 </body>
 </html>
